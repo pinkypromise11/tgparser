@@ -1,0 +1,39 @@
+{
+  "include": [
+    "node",
+    "node.js",
+    "nodejs",
+    "javascript",
+    "typescript",
+    "react",
+    "next.js",
+    "backend",
+    "frontend",
+    "fullstack",
+    "nestjs"
+    "senior",
+    "python",
+    "devops",
+    "sre",
+    "golang"
+    "net",
+    "dotnet",
+    "csharp",
+    "c#",
+    "java"
+    "fastapi",
+    "django",
+    "asp.net"
+  ],
+
+  "exclude": [
+    "android",
+    "1c",
+    "ios",
+    "#resume"
+    "#резюме",
+    "1с",
+    "1c",
+    "#cv",
+  ]
+}
