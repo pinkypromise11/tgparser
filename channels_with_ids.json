@@ -1,0 +1,878 @@
+[
+  {
+    "market": "RU",
+    "username": "over100",
+    "id": "-1001265252992",
+    "link": "https://t.me/over100"
+  },
+  {
+    "market": "RU",
+    "username": "Getitrussia",
+    "id": "-1001092674389",
+    "link": "https://t.me/Getitrussia"
+  },
+  {
+    "market": "RU",
+    "username": "IT_jobs_apply",
+    "id": "-1001121739665",
+    "link": "https://t.me/IT_jobs_apply"
+  },
+  {
+    "market": "RU",
+    "username": "rabotaembedded",
+    "id": "-1001142200685",
+    "link": "https://t.me/rabotaembedded"
+  },
+  {
+    "market": "RU",
+    "username": "progjob",
+    "id": "-1001278223896",
+    "link": "https://t.me/progjob"
+  },
+  {
+    "market": "RU",
+    "username": "it_vac",
+    "id": "-1001226791258",
+    "link": "https://t.me/it_vac"
+  },
+  {
+    "market": "RU",
+    "username": "jc_it",
+    "id": "-1001447304363",
+    "link": "https://t.me/jc_it"
+  },
+  {
+    "market": "RU",
+    "username": "Relocats",
+    "id": "-1001136736785",
+    "link": "https://t.me/Relocats"
+  },
+  {
+    "market": "RU",
+    "username": "zapwork",
+    "id": "-1001342741755",
+    "link": "https://t.me/zapwork"
+  },
+  {
+    "market": "RU",
+    "username": "jobs_it",
+    "id": "-1001048585467",
+    "link": "https://t.me/jobs_it"
+  },
+  {
+    "market": "RU",
+    "username": "habr_career",
+    "id": "-1001011903786",
+    "link": "https://t.me/habr_career"
+  },
+  {
+    "market": "RU",
+    "username": "tproger_official",
+    "id": "-1001044298783",
+    "link": "https://t.me/tproger_official"
+  },
+  {
+    "market": "RU",
+    "username": "itworkhubchannel",
+    "id": "-1003889386784",
+    "link": "https://t.me/itworkhubchannel"
+  },
+  {
+    "market": "RU",
+    "username": "runello_rus_backend",
+    "id": "-1001344577123",
+    "link": "https://t.me/runello_rus_backend"
+  },
+  {
+    "market": "RU",
+    "username": "devjobs",
+    "id": "-1001120288601",
+    "link": "https://t.me/devjobs"
+  },
+  {
+    "market": "RU",
+    "username": "gamedevjob",
+    "id": "-1001109222536",
+    "link": "https://t.me/gamedevjob"
+  },
+  {
+    "market": "RU",
+    "username": "gdjobs",
+    "id": "-1001535202319",
+    "link": "https://t.me/gdjobs"
+  },
+  {
+    "market": "RU",
+    "username": "job_gamedev",
+    "id": "-1001682988147",
+    "link": "https://t.me/job_gamedev"
+  },
+  {
+    "market": "RU",
+    "username": "gamedevjobtinder",
+    "id": "-1001621850024",
+    "link": "https://t.me/gamedevjobtinder"
+  },
+  {
+    "market": "RU",
+    "username": "refer_me_it",
+    "id": "-1002139675468",
+    "link": "https://t.me/refer_me_it"
+  },
+  {
+    "market": "RU",
+    "username": "BlockHire",
+    "id": "-1003861760454",
+    "link": "https://t.me/BlockHire"
+  },
+  {
+    "market": "RU",
+    "username": "CurritJobs",
+    "id": "-1003863349184",
+    "link": "https://t.me/CurritJobs"
+  },
+  {
+    "market": "RU",
+    "username": "newhrvacancies",
+    "id": "-1002826008794",
+    "link": "https://t.me/newhrvacancies"
+  },
+  {
+    "market": "RU",
+    "username": "careerYlej",
+    "id": "-1001193690335",
+    "link": "https://t.me/careerYlej"
+  },
+  {
+    "market": "RU",
+    "username": "RockitsJobbot",
+    "id": "-1006260461110",
+    "link": "https://t.me/RockitsJobbot"
+  },
+  {
+    "market": "RU",
+    "username": "pydevjob",
+    "id": "-1001362026498",
+    "link": "https://t.me/pydevjob"
+  },
+  {
+    "market": "RU",
+    "username": "ru_pythonjobs",
+    "id": "-1001049086457",
+    "link": "https://t.me/ru_pythonjobs"
+  },
+  {
+    "market": "RU",
+    "username": "ru_python",
+    "id": "-1001007166727",
+    "link": "https://t.me/ru_python"
+  },
+  {
+    "market": "RU",
+    "username": "forpython",
+    "id": "-1001381822968",
+    "link": "https://t.me/forpython"
+  },
+  {
+    "market": "RU",
+    "username": "job_python",
+    "id": "-1001292405242",
+    "link": "https://t.me/job_python"
+  },
+  {
+    "market": "RU",
+    "username": "job_pythonz",
+    "id": "-1001496946174",
+    "link": "https://t.me/job_pythonz"
+  },
+  {
+    "market": "RU",
+    "username": "pythonrabota",
+    "id": "-1001305766523",
+    "link": "https://t.me/pythonrabota"
+  },
+  {
+    "market": "RU",
+    "username": "pythonpythonjobs",
+    "id": "-1001803553802",
+    "link": "https://t.me/pythonpythonjobs"
+  },
+  {
+    "market": "RU",
+    "username": "python_jobs",
+    "id": "-1001067529236",
+    "link": "https://t.me/python_jobs"
+  },
+  {
+    "market": "RU",
+    "username": "python_django_work",
+    "id": "-1001750581511",
+    "link": "https://t.me/python_django_work"
+  },
+  {
+    "market": "RU",
+    "username": "runello_rus_python",
+    "id": "-1001582627575",
+    "link": "https://t.me/runello_rus_python"
+  },
+  {
+    "market": "RU",
+    "username": "runello_rus_python",
+    "id": "-1001582627575",
+    "link": "https://t.me/runello_rus_python"
+  },
+  {
+    "market": "RU",
+    "username": "django_jobs",
+    "id": "-1001135883569",
+    "link": "https://t.me/django_jobs"
+  },
+  {
+    "market": "RU",
+    "username": "job_python",
+    "id": "-1001292405242",
+    "link": "https://t.me/job_python"
+  },
+  {
+    "market": "RU",
+    "username": "django_jobs_board",
+    "id": "-1001154585596",
+    "link": "https://t.me/django_jobs_board"
+  },
+  {
+    "market": "RU",
+    "username": "ai_rabota",
+    "id": "-1001496544038",
+    "link": "https://t.me/ai_rabota"
+  },
+  {
+    "market": "RU",
+    "username": "it_match_frontend",
+    "id": "-1003682555208",
+    "link": "https://t.me/it_match_frontend"
+  },
+  {
+    "market": "RU",
+    "username": "easy_frontend_jobs",
+    "id": "-1001974764013",
+    "link": "https://t.me/easy_frontend_jobs"
+  },
+  {
+    "market": "RU",
+    "username": "job_webdev",
+    "id": "-1001850985741",
+    "link": "https://t.me/job_webdev"
+  },
+  {
+    "market": "RU",
+    "username": "forfrontend",
+    "id": "-1001347539956",
+    "link": "https://t.me/forfrontend"
+  },
+  {
+    "market": "RU",
+    "username": "front_end_dev",
+    "id": "-1001052068360",
+    "link": "https://t.me/front_end_dev"
+  },
+  {
+    "market": "RU",
+    "username": "forwebdev",
+    "id": "-1001049110127",
+    "link": "https://t.me/forwebdev"
+  },
+  {
+    "market": "RU",
+    "username": "runello_rus_c",
+    "id": "-1001778222868",
+    "link": "https://t.me/runello_rus_c"
+  },
+  {
+    "market": "RU",
+    "username": "csharpdevjob",
+    "id": "-1001212014211",
+    "link": "https://t.me/csharpdevjob"
+  },
+  {
+    "market": "RU",
+    "username": "forcsharp",
+    "id": "-1001184738995",
+    "link": "https://t.me/forcsharp"
+  },
+  {
+    "market": "RU",
+    "username": "dotnetrujobs",
+    "id": "-1001360727685",
+    "link": "https://t.me/dotnetrujobs"
+  },
+  {
+    "market": "RU",
+    "username": "javadevjob",
+    "id": "-1001470492937",
+    "link": "https://t.me/javadevjob"
+  },
+  {
+    "market": "RU",
+    "username": "GolangJobsit",
+    "id": "-1001655274440",
+    "link": "https://t.me/GolangJobsit"
+  },
+  {
+    "market": "RU",
+    "username": "godevjob",
+    "id": "-1001295906671",
+    "link": "https://t.me/godevjob"
+  },
+  {
+    "market": "RU",
+    "username": "go_job",
+    "id": "-1001150030803",
+    "link": "https://t.me/go_job"
+  },
+  {
+    "market": "RU",
+    "username": "rabota_golang",
+    "id": "-1001113317966",
+    "link": "https://t.me/rabota_golang"
+  },
+  {
+    "market": "RU",
+    "username": "golangl",
+    "id": "-1001233088160",
+    "link": "https://t.me/golangl"
+  },
+  {
+    "market": "RU",
+    "username": "fordevops",
+    "id": "-1001213858047",
+    "link": "https://t.me/fordevops"
+  },
+  {
+    "market": "RU",
+    "username": "devops_jobs",
+    "id": "-1001051806860",
+    "link": "https://t.me/devops_jobs"
+  },
+  {
+    "market": "RU",
+    "username": "rabota_razrabotchik",
+    "id": "-1001460647902",
+    "link": "https://t.me/rabota_razrabotchik"
+  },
+  {
+    "market": "RU",
+    "username": "JobsforDevsandOps",
+    "id": "-1001184214119",
+    "link": "https://t.me/JobsforDevsandOps"
+  },
+  {
+    "market": "RU",
+    "username": "sysadmin_rabota",
+    "id": "-1001603073695",
+    "link": "https://t.me/sysadmin_rabota"
+  },
+  {
+    "market": "RU",
+    "username": "jobsearchgod",
+    "id": "-1001723874161",
+    "link": "https://t.me/jobsearchgod"
+  },
+  {
+    "market": "RU",
+    "username": "qavacant",
+    "id": "-1002689014107",
+    "link": "https://t.me/qavacant"
+  },
+  {
+    "market": "RU",
+    "username": "rabotadlaqa",
+    "id": "-1002025051524",
+    "link": "https://t.me/rabotadlaqa"
+  },
+  {
+    "market": "RU",
+    "username": "qajobsru",
+    "id": "-1002031502712",
+    "link": "https://t.me/qajobsru"
+  },
+  {
+    "market": "RU",
+    "username": "jobfortester",
+    "id": "-1002636269607",
+    "link": "https://t.me/jobfortester"
+  },
+  {
+    "market": "RU",
+    "username": "qa_jobs",
+    "id": "-1001089317451",
+    "link": "https://t.me/qa_jobs"
+  },
+  {
+    "market": "RU",
+    "username": "qa_work",
+    "id": "-1001602840510",
+    "link": "https://t.me/qa_work"
+  },
+  {
+    "market": "RU",
+    "username": "rabotak_razrabotchik",
+    "id": "-1001159580473",
+    "link": "https://t.me/rabotak_razrabotchik"
+  },
+  {
+    "market": "RU",
+    "username": "rabota_razrabotchikx",
+    "id": "-1001175438034",
+    "link": "https://t.me/rabota_razrabotchikx"
+  },
+  {
+    "market": "RU",
+    "username": "rabotaweb3",
+    "id": "-1001281807560",
+    "link": "https://t.me/rabotaweb3"
+  },
+  {
+    "market": "EN",
+    "username": "it_tasks",
+    "id": "-1001495067008",
+    "link": "https://t.me/it_tasks"
+  },
+  {
+    "market": "EN",
+    "username": "remotegeekjob",
+    "id": "-1001322005976",
+    "link": "https://t.me/remotegeekjob"
+  },
+  {
+    "market": "EN",
+    "username": "dev_connectablejobs",
+    "id": "-1001786987818",
+    "link": "https://t.me/dev_connectablejobs"
+  },
+  {
+    "market": "EN",
+    "username": "reg2bet",
+    "id": "-1001581284222",
+    "link": "https://t.me/reg2bet"
+  },
+  {
+    "market": "EN",
+    "username": "it_vacancy_relocation",
+    "id": "-1001604435961",
+    "link": "https://t.me/it_vacancy_relocation"
+  },
+  {
+    "market": "EN",
+    "username": "recrytingIT",
+    "id": "-1002353007978",
+    "link": "https://t.me/recrytingIT"
+  },
+  {
+    "market": "EN",
+    "username": "fordev",
+    "id": "-1001102268569",
+    "link": "https://t.me/fordev"
+  },
+  {
+    "market": "EN",
+    "username": "youritjob",
+    "id": "-1001669483056",
+    "link": "https://t.me/youritjob"
+  },
+  {
+    "market": "EN",
+    "username": "hiddengurus",
+    "id": "-1001180658115",
+    "link": "https://t.me/hiddengurus"
+  },
+  {
+    "market": "EN",
+    "username": "holder_job_devs",
+    "id": "-1002118394321",
+    "link": "https://t.me/holder_job_devs"
+  },
+  {
+    "market": "EN",
+    "username": "zarubezhom_jobs",
+    "id": "-1001804835860",
+    "link": "https://t.me/zarubezhom_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "young_relocate",
+    "id": "-1001788647101",
+    "link": "https://t.me/young_relocate"
+  },
+  {
+    "market": "EN",
+    "username": "opento_dev",
+    "id": "-1001639682774",
+    "link": "https://t.me/opento_dev"
+  },
+  {
+    "market": "EN",
+    "username": "vac_itt",
+    "id": "-1002297935388",
+    "link": "https://t.me/vac_itt"
+  },
+  {
+    "market": "EN",
+    "username": "cvjobge",
+    "id": "-1001746980673",
+    "link": "https://t.me/cvjobge"
+  },
+  {
+    "market": "EN",
+    "username": "sparklesjobs",
+    "id": "-1002140214987",
+    "link": "https://t.me/sparklesjobs"
+  },
+  {
+    "market": "EN",
+    "username": "relocaty_jobs",
+    "id": "-1001664042018",
+    "link": "https://t.me/relocaty_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "linked_jobs",
+    "id": "-1002769347520",
+    "link": "https://t.me/linked_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "Vamivacancies",
+    "id": "-1001701843594",
+    "link": "https://t.me/Vamivacancies"
+  },
+  {
+    "market": "EN",
+    "username": "jtbl_vacancy",
+    "id": "-1002403817147",
+    "link": "https://t.me/jtbl_vacancy"
+  },
+  {
+    "market": "EN",
+    "username": "thirtySecondsToOffer",
+    "id": "-1002633836745",
+    "link": "https://t.me/thirtySecondsToOffer"
+  },
+  {
+    "market": "EN",
+    "username": "itworkhubchannel",
+    "id": "-1003889386784",
+    "link": "https://t.me/itworkhubchannel"
+  },
+  {
+    "market": "EN",
+    "username": "serbia_jobs",
+    "id": "-1001706774915",
+    "link": "https://t.me/serbia_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "cyithr",
+    "id": "-1001654483967",
+    "link": "https://t.me/cyithr"
+  },
+  {
+    "market": "EN",
+    "username": "forgoandrust",
+    "id": "-1001205871598",
+    "link": "https://t.me/forgoandrust"
+  },
+  {
+    "market": "EN",
+    "username": "young_gamedev",
+    "id": "-1001554207312",
+    "link": "https://t.me/young_gamedev"
+  },
+  {
+    "market": "EN",
+    "username": "GameDev_and_Tech_vacancy",
+    "id": "-1001880470709",
+    "link": "https://t.me/GameDev_and_Tech_vacancy"
+  },
+  {
+    "market": "EN",
+    "username": "cyithr",
+    "id": "-1001654483967",
+    "link": "https://t.me/cyithr"
+  },
+  {
+    "market": "EN",
+    "username": "refer_me_it",
+    "id": "-1002139675468",
+    "link": "https://t.me/refer_me_it"
+  },
+  {
+    "market": "EN",
+    "username": "jobs_it",
+    "id": "-1001048585467",
+    "link": "https://t.me/jobs_it"
+  },
+  {
+    "market": "EN",
+    "username": "fintech_vacancy",
+    "id": "-1001289325710",
+    "link": "https://t.me/fintech_vacancy"
+  },
+  {
+    "market": "EN",
+    "username": "newhrvacancies",
+    "id": "-1002826008794",
+    "link": "https://t.me/newhrvacancies"
+  },
+  {
+    "market": "EN",
+    "username": "Jobs_global_startups",
+    "id": "-1001231680992",
+    "link": "https://t.me/Jobs_global_startups"
+  },
+  {
+    "market": "EN",
+    "username": "refer_me_it_bot",
+    "id": "-1006848197945",
+    "link": "https://t.me/refer_me_it_bot"
+  },
+  {
+    "market": "EN",
+    "username": "recrutico_hiring",
+    "id": "-1003998184865",
+    "link": "https://t.me/recrutico_hiring"
+  },
+  {
+    "market": "EN",
+    "username": "kolyaofferit",
+    "id": "-1002693271530",
+    "link": "https://t.me/kolyaofferit"
+  },
+  {
+    "market": "EN",
+    "username": "BlockHire",
+    "id": "-1003861760454",
+    "link": "https://t.me/BlockHire"
+  },
+  {
+    "market": "EN",
+    "username": "apply_jobs_bot",
+    "id": "-1006159742302",
+    "link": "https://t.me/apply_jobs_bot"
+  },
+  {
+    "market": "EN",
+    "username": "g_jobbot",
+    "id": "-1001185216597",
+    "link": "https://t.me/g_jobbot"
+  },
+  {
+    "market": "EN",
+    "username": "easy_python_job",
+    "id": "-1001742396152",
+    "link": "https://t.me/easy_python_job"
+  },
+  {
+    "market": "EN",
+    "username": "pydevjob",
+    "id": "-1001362026498",
+    "link": "https://t.me/pydevjob"
+  },
+  {
+    "market": "EN",
+    "username": "forpython",
+    "id": "-1001381822968",
+    "link": "https://t.me/forpython"
+  },
+  {
+    "market": "EN",
+    "username": "javascript_jobs",
+    "id": "-1001050008285",
+    "link": "https://t.me/javascript_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "jsgurujobs",
+    "id": "-1002671877134",
+    "link": "https://t.me/jsgurujobs"
+  },
+  {
+    "market": "EN",
+    "username": "easy_frontend_jobs",
+    "id": "-1001974764013",
+    "link": "https://t.me/easy_frontend_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "forfrontend",
+    "id": "-1001347539956",
+    "link": "https://t.me/forfrontend"
+  },
+  {
+    "market": "EN",
+    "username": "front_end_jobs",
+    "id": "-1001169018939",
+    "link": "https://t.me/front_end_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "easy_csharp_job",
+    "id": "-1001890726592",
+    "link": "https://t.me/easy_csharp_job"
+  },
+  {
+    "market": "EN",
+    "username": "csharpdevjob",
+    "id": "-1001212014211",
+    "link": "https://t.me/csharpdevjob"
+  },
+  {
+    "market": "EN",
+    "username": "runello_rus_c",
+    "id": "-1001778222868",
+    "link": "https://t.me/runello_rus_c"
+  },
+  {
+    "market": "EN",
+    "username": "csharpdevjob",
+    "id": "-1001212014211",
+    "link": "https://t.me/csharpdevjob"
+  },
+  {
+    "market": "EN",
+    "username": "forcsharp",
+    "id": "-1001184738995",
+    "link": "https://t.me/forcsharp"
+  },
+  {
+    "market": "EN",
+    "username": "dotnetrujobs",
+    "id": "-1001360727685",
+    "link": "https://t.me/dotnetrujobs"
+  },
+  {
+    "market": "EN",
+    "username": "easy_java_job",
+    "id": "-1001957828227",
+    "link": "https://t.me/easy_java_job"
+  },
+  {
+    "market": "EN",
+    "username": "golang_jobs",
+    "id": "-1001137651348",
+    "link": "https://t.me/golang_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "fordevops",
+    "id": "-1001213858047",
+    "link": "https://t.me/fordevops"
+  },
+  {
+    "market": "EN",
+    "username": "devops_jobs_feed",
+    "id": "-1001134745498",
+    "link": "https://t.me/devops_jobs_feed"
+  },
+  {
+    "market": "EN",
+    "username": "DevOpsSRE_Jobs",
+    "id": "-1001809193310",
+    "link": "https://t.me/DevOpsSRE_Jobs"
+  },
+  {
+    "market": "EN",
+    "username": "easy_qa_jobs",
+    "id": "-1001698296601",
+    "link": "https://t.me/easy_qa_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "qajoboffer",
+    "id": "-1001660655998",
+    "link": "https://t.me/qajoboffer"
+  },
+  {
+    "market": "EN",
+    "username": "qa_jobs",
+    "id": "-1001089317451",
+    "link": "https://t.me/qa_jobs"
+  },
+  {
+    "market": "EN",
+    "username": "ingamejob_qa",
+    "id": "-1001200409456",
+    "link": "https://t.me/ingamejob_qa"
+  },
+  {
+    "market": "EN",
+    "username": "forallqa",
+    "id": "-1001253965277",
+    "link": "https://t.me/forallqa"
+  },
+  {
+    "market": "EN",
+    "username": "rabota_kripta",
+    "id": "-1003795303409",
+    "link": "https://t.me/rabota_kripta"
+  },
+  {
+    "market": "EN",
+    "username": "cryptojobslist",
+    "id": "-1001100655091",
+    "link": "https://t.me/cryptojobslist"
+  },
+  {
+    "market": "EN",
+    "username": "crypto_vacancy_web3",
+    "id": "-1001581175740",
+    "link": "https://t.me/crypto_vacancy_web3"
+  },
+  {
+    "market": "EN",
+    "username": "cryptoheadhunter",
+    "id": "-1001151522902",
+    "link": "https://t.me/cryptoheadhunter"
+  },
+  {
+    "market": "EN",
+    "username": "web3jobs",
+    "id": "-1001772348618",
+    "link": "https://t.me/web3jobs"
+  },
+  {
+    "market": "EN",
+    "username": "crypto_vacancyy",
+    "id": "-1001681126527",
+    "link": "https://t.me/crypto_vacancyy"
+  },
+  {
+    "market": "EN",
+    "username": "jayatalent",
+    "id": "-1002156444193",
+    "link": "https://t.me/jayatalent"
+  },
+  {
+    "market": "EN",
+    "username": "job_crypto_uae",
+    "id": "-1001652533706",
+    "link": "https://t.me/job_crypto_uae"
+  },
+  {
+    "market": "EN",
+    "username": "easy_cplus_job",
+    "id": "-1001900299996",
+    "link": "https://t.me/easy_cplus_job"
+  },
+  {
+    "market": "EN",
+    "username": "easy_php_job",
+    "id": "-1001827068909",
+    "link": "https://t.me/easy_php_job"
+  },
+  {
+    "market": "EN",
+    "username": "easy_node_js_job",
+    "id": "-1002102014232",
+    "link": "https://t.me/easy_node_js_job"
+  }
+]
