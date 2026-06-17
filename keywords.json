@@ -10,17 +10,17 @@
     "backend",
     "frontend",
     "fullstack",
-    "nestjs"
+    "nestjs",
     "senior",
     "python",
     "devops",
     "sre",
-    "golang"
+    "golang",
     ".net",
     "dotnet",
     "csharp",
     "c#",
-    "java"
+    "java",
     "fastapi",
     "django",
     "asp.net",
@@ -29,14 +29,24 @@
     "старший",
     "engineer",
     "software",
-    "разработчик"
+    "разработчик",
+    "js",
+    "typescript",
+    "react/typescript",
+    "reactjs",
+    "react.js",
+    "nextjs",
+    "javascript",
+    "senior+",
+    "middle+",
+    "middle+/senior"
   ],
 
   "exclude": [
     "android",
     "1c",
     "ios",
-    "#resume"
+    "#resume",
     "#резюме",
     "1с",
     "1c",
@@ -120,6 +130,32 @@
     "административный",
     "кадровый",
     "администратор",
-    "administrator"
+    "administrator",
+    "#резюме",
+    "#resume",
+    "#cv",
+    "подработка",
+    "part-time",
+    "#parttime"
+    "#parttime"
+    "подработка",
+    "business",
+    "бизнес аналитик",
+    "бизнес-аналитик",
+    "business intelligence",
+    "business-analyst",
+    "analyst",
+    "аналитик",
+    "data",
+    "data-analyst",
+    "creative",
+    "producer",
+    "креативный",
+    "продюсер",
+    "creator",
+    "content",
+    "контент",
+    "креатор",
+    "смм"
   ]
 }
