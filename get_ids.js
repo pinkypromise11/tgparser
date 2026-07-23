@@ -85,12 +85,12 @@ async function loadIdsFromFile(client, filename, market) {
     const all = [...ru, ...en];
 
     fs.writeFileSync(
-        "channels_with_ids.json",
+        "config/channels_with_ids.json",
         JSON.stringify(all, null, 2)
     );
 
     console.log(
-        "🎉 Saved to channels_with_ids.json"
+        "🎉 Saved to config/channels_with_ids.json"
     );
 
     process.exit(0);

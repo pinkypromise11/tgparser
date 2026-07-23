@@ -3,7 +3,6 @@ require("dotenv").config();
 const fs = require("fs");
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
-const { NewMessage } = require("telegram/events");
 
 const { FloodWaitError } = require("telegram/errors");
 
@@ -59,7 +58,7 @@ for (const item of CHANNELS_INFO) {
 
 const TARGET_CHANNEL = -1004295313892;
 let sentCounter = 0;
-const STATE_FILE = "state.json";
+const STATE_FILE = "config/state.json";
 
 function loadState() {
     if (!fs.existsSync(STATE_FILE)) {
@@ -166,15 +165,11 @@ ${msg.message}
                     continue;
                 }
 
-                if (state.processed.includes(uid)) {
-    continue;
-}
+                if (!isRelevant(msg.message)) {
+                    continue;
+                }
 
-if (!isRelevant(msg.message)) {
-    continue;
-}
-
-state.processed.push(uid);
+                state.processed.push(uid);
                 
 
                 const formatted =
@@ -187,19 +182,19 @@ state.processed.push(uid);
                 console.log("🔥 HISTORICAL MATCH");
 
                 try {
-await safeSendMessage(client, TARGET_CHANNEL, formatted);
+                    await safeSendMessage(client, TARGET_CHANNEL, formatted);
 
-                        sentCounter++;
+                    sentCounter++;
 
-if (sentCounter % 20 === 0) {
-    console.log(
-        "⏳ Пауза 226 секунд..."
-    );
+                    if (sentCounter % 20 === 0) {
+                        console.log(
+                            "⏳ Пауза 226 секунд..."
+                        );
 
-    await new Promise(resolve =>
-        setTimeout(resolve, 226000)
-    );
-}
+                        await new Promise(resolve =>
+                            setTimeout(resolve, 226000)
+                        );
+                    }
                 } catch (e) {
                     console.log(
                         "❌ Send error:",
@@ -217,69 +212,4 @@ if (sentCounter % 20 === 0) {
     }
 
     saveState(state);
-
-    console.log("📡 Live monitoring...");
-
-    client.addEventHandler(
-        async (event) => {
-            try {
-                const msg = event.message;
-
-                if (!msg || !msg.message) {
-                    return;
-                }
-
-                const channelId = msg.chatId?.toString();
-
-                if (!Number.isFinite(channelId)) {
-                    return;
-                }
-
-                if (!CHANNELS.includes(channelId)) {
-                    return;
-                }
-
-                const uid = `${channelId}_${msg.id}`;
-
-                if (
-                    state.processed.includes(uid)
-                ) {
-                    return;
-                }
-
-                state.processed.push(uid);
-
-                if (
-                    state.processed.length > 5000
-                ) {
-                    state.processed.shift();
-                }
-
-                saveState(state);
-
-                if (
-                    !isRelevant(msg.message)
-                ) {
-                    return;
-                }
-
-                const formatted =
-                    await buildMessage(
-                        client,
-                        channelId,
-                        msg
-                    );
-
-                console.log("🔥 NEW MATCH");
-
-                await safeSendMessage(client, TARGET_CHANNEL, formatted);
-            } catch (e) {
-                console.log(
-                    "❌ Live error:",
-                    e.message
-                );
-            }
-        },
-        new NewMessage({})
-    );
 })();

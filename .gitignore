@@ -3,5 +3,6 @@ node_modules/
 .env.*
 session.txt
 *.session
-config/
+config/*
+!config/keywords.json
 state.json
