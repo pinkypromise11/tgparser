@@ -3,6 +3,10 @@ require("dotenv").config();
 const fs = require("fs");
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
+const {
+    isExcludedChannelUsername,
+    normalizeUsername,
+} = require("./excluded_channels");
 
 const apiId = Number(process.env.API_ID);
 const apiHash = process.env.API_HASH;
@@ -17,12 +21,14 @@ async function loadIdsFromFile(client, filename, market) {
     const result = [];
 
     for (const link of lines) {
-        try {
-            const username = link
-                .replace("https://t.me/", "")
-                .replace("@", "")
-                .trim();
+        const username = normalizeUsername(link);
 
+        if (isExcludedChannelUsername(username)) {
+            console.log(`Skipped excluded channel: ${username}`);
+            continue;
+        }
+
+        try {
             const entity =
                 await client.getEntity(username);
 

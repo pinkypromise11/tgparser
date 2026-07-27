@@ -3,26 +3,24 @@ require("dotenv").config();
 const fs = require("fs");
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
+const {
+    isExcludedChannelId,
+    isExcludedChannelUsername,
+} = require("./excluded_channels");
+const { isRelevant } = require("./post_filter");
 
 const CHANNELS_FILE = "config/channels_with_ids.json";
 const KEYWORDS_FILE = "config/keywords.json";
 const OUTPUT_FILE = "posts.json";
 const HOURS = 72;
 
-const channels = JSON.parse(fs.readFileSync(CHANNELS_FILE, "utf8"));
+const channels = JSON.parse(
+    fs.readFileSync(CHANNELS_FILE, "utf8")
+).filter((channel) =>
+    !isExcludedChannelId(channel.id) &&
+    !isExcludedChannelUsername(channel.username || channel.link)
+);
 const keywords = JSON.parse(fs.readFileSync(KEYWORDS_FILE, "utf8"));
-
-function isRelevant(text = "") {
-    const lower = text.toLowerCase();
-    const included = keywords.include.some((word) =>
-        lower.includes(word.toLowerCase())
-    );
-    const excluded = keywords.exclude.some((word) =>
-        lower.includes(word.toLowerCase())
-    );
-
-    return included && !excluded;
-}
 
 function unixSeconds(value) {
     if (value instanceof Date) {
@@ -54,7 +52,10 @@ function unixSeconds(value) {
                     const timestamp = unixSeconds(message.date);
 
                     if (timestamp < cutoff) break;
-                    if (!message.message || !isRelevant(message.message)) continue;
+                    if (
+                        !message.message ||
+                        !isRelevant(message.message, channel.id, keywords)
+                    ) continue;
 
                     posts.push({
                         channel_id: String(channel.id),
