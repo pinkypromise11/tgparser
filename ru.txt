@@ -3,7 +3,6 @@ https://t.me/Getitrussia
 https://t.me/IT_jobs_apply
 https://t.me/rabotaembedded
 https://t.me/progjob
-https://t.me/it_vac
 https://t.me/jc_it
 https://t.me/Relocats
 https://t.me/zapwork
@@ -35,8 +34,6 @@ https://t.me/forfrontend
 https://t.me/front_end_dev
 https://t.me/forwebdev
 https://t.me/runello_rus_c
-https://t.me/csharpdevjob
-https://t.me/forcsharp
 https://t.me/dotnetrujobs
 https://t.me/GolangJobsit
 https://t.me/godevjob

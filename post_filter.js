@@ -95,6 +95,8 @@ const NON_VACANCY_SIGNALS = [
     "укажите ссылку на сайт компании",
     "for such warm words",
     "clients trust us",
+    "автор:",
+    "author:",
     "сейчас рассматриваю новые предложения",
     "рассматриваю новые предложения",
     "рассматриваю удаленную работу",
@@ -117,6 +119,7 @@ const NON_VACANCY_SIGNALS = [
 ];
 
 const phrasePatternCache = new Map();
+const keywordPatternCache = new Map();
 
 function normalizeText(value = "") {
     return String(value)
@@ -154,6 +157,25 @@ function phrasePattern(phrase) {
 
 function containsPhrase(normalizedText, phrase) {
     return phrasePattern(phrase).test(normalizedText);
+}
+
+function keywordPattern(keyword) {
+    if (keywordPatternCache.has(keyword)) {
+        return keywordPatternCache.get(keyword);
+    }
+
+    const normalized = normalizeText(keyword);
+    const pattern = new RegExp(
+        `(?<![\\p{L}\\p{N}])${escapeRegExp(normalized)}(?![\\p{L}\\p{N}])`,
+        "u"
+    );
+
+    keywordPatternCache.set(keyword, pattern);
+    return pattern;
+}
+
+function containsKeyword(normalizedText, keyword) {
+    return keywordPattern(keyword).test(normalizedText);
 }
 
 function hasOnlyAllowedAlphabets(text = "") {
@@ -217,14 +239,19 @@ function isRelevant(text = "", channelId, keywords) {
     }
 
     const normalized = normalizeText(text);
-    const hasInclude = keywords.include.some((word) =>
-        normalized.includes(normalizeText(word))
-    );
     const hasExclude = keywords.exclude.some((word) =>
-        normalized.includes(normalizeText(word))
+        containsKeyword(normalized, word)
     );
 
-    if (!hasInclude || hasExclude) {
+    if (hasExclude) {
+        return false;
+    }
+
+    const hasInclude = keywords.include.some((word) =>
+        containsKeyword(normalized, word)
+    );
+
+    if (!hasInclude) {
         return false;
     }
 
@@ -237,6 +264,7 @@ module.exports = {
     STRUCTURED_VACANCY_FIELDS,
     hasOnlyAllowedAlphabets,
     hasVacancyIntent,
+    containsKeyword,
     isRelevant,
     normalizeText,
 };

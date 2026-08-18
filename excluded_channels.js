@@ -1,4 +1,5 @@
 const INVALID_CHANNELS = require("./invalidchannel.json");
+const CSHARP_CHANNELS = require("./csharpchannels.json");
 
 const EXCLUDED_CHANNELS = Object.freeze([
     {
@@ -45,6 +46,14 @@ const EXCLUDED_CHANNELS = Object.freeze([
         username: "ingamejob_qa",
         id: "-1001200409456",
     },
+    {
+        username: "it_vac",
+        id: "-1001226791258",
+    },
+    ...CSHARP_CHANNELS.map((channel) => ({
+        username: channel.link.split("/").pop(),
+        id: channel.id,
+    })),
     ...INVALID_CHANNELS.map((channel) => ({
         username: channel.link.split("/").pop(),
         id: channel.chat_id,

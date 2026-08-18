@@ -1,7 +1,10 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
+const projectKeywords = require("./config/keywords.json");
+
 const {
+    containsKeyword,
     hasOnlyAllowedAlphabets,
     hasVacancyIntent,
     isRelevant,
@@ -14,6 +17,18 @@ const keywords = {
     include: ["python", "fastapi", "developer"],
     exclude: ["open to work", "#resume", "#cv"],
 };
+
+test("project exclusion keywords do not contradict include keywords", () => {
+    const conflictingExcludes = projectKeywords.exclude.filter((excluded) => {
+        const normalizedExcluded = normalizeText(excluded);
+
+        return projectKeywords.include.some((included) =>
+            containsKeyword(normalizedExcluded, included)
+        );
+    });
+
+    assert.deepEqual(conflictingExcludes, []);
+});
 
 test("rejects the cited technical chat messages in the strict channel", () => {
     const messages = [
@@ -103,6 +118,81 @@ test("keeps exclusions ahead of vacancy intent", () => {
             keywords
         ),
         false
+    );
+});
+
+test("matches configured keywords as complete terms", () => {
+    const text = normalizeText("We are hiring a JavaScript developer");
+
+    assert.equal(containsKeyword(text, "javascript"), true);
+    assert.equal(containsKeyword(text, "java"), false);
+    assert.equal(containsKeyword(text, "script"), false);
+});
+
+test("supports symbol-heavy keywords without substring matches", () => {
+    assert.equal(
+        containsKeyword(normalizeText("Hiring C# developer"), "c#"),
+        true
+    );
+    assert.equal(
+        containsKeyword(normalizeText("Hiring C++ developer"), "c++"),
+        true
+    );
+    assert.equal(
+        containsKeyword(normalizeText("Hiring .NET developer"), ".net"),
+        true
+    );
+    assert.equal(
+        containsKeyword(normalizeText("Hiring ASP.NET developer"), ".net"),
+        false
+    );
+    assert.equal(
+        containsKeyword(normalizeText("Hiring Node.js developer"), "node.js"),
+        true
+    );
+    assert.equal(
+        containsKeyword(normalizeText("Hiring xNode.js developer"), "node.js"),
+        false
+    );
+});
+
+test("keeps excluded keywords prioritized with complete-term matching", () => {
+    const priorityKeywords = {
+        include: ["java", "developer"],
+        exclude: ["javascript", "qa"],
+    };
+
+    assert.equal(
+        isRelevant(
+            "We are hiring a Java developer",
+            STRICT_CHANNEL,
+            priorityKeywords
+        ),
+        true
+    );
+    assert.equal(
+        isRelevant(
+            "We are hiring a JavaScript developer",
+            STRICT_CHANNEL,
+            priorityKeywords
+        ),
+        false
+    );
+    assert.equal(
+        isRelevant(
+            "We are hiring a Java developer for a QA team",
+            STRICT_CHANNEL,
+            priorityKeywords
+        ),
+        false
+    );
+    assert.equal(
+        isRelevant(
+            "We are hiring a Java developer for a qaautomation team",
+            STRICT_CHANNEL,
+            priorityKeywords
+        ),
+        true
     );
 });
 
@@ -198,4 +288,16 @@ test("rejects vacancy instructions, testimonials, and candidate CVs", () => {
     ]) {
         assert.equal(hasVacancyIntent(text), false, text);
     }
+});
+
+test("rejects editorial articles that resemble terse vacancies", () => {
+    const article = [
+        "iGaming продукт и delayed activation",
+        "Автор: Виктор Андрийчук",
+        "iGaming AI Engineer",
+        "Игрок проиграл €500.",
+        "Delayed activation — гибрид.",
+    ].join("\n");
+
+    assert.equal(hasVacancyIntent(article), false);
 });
