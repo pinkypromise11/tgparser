@@ -95,6 +95,8 @@ const NON_VACANCY_SIGNALS = [
     "укажите ссылку на сайт компании",
     "for such warm words",
     "clients trust us",
+    "автор:",
+    "author:",
     "сейчас рассматриваю новые предложения",
     "рассматриваю новые предложения",
     "рассматриваю удаленную работу",
@@ -117,6 +119,8 @@ const NON_VACANCY_SIGNALS = [
 ];
 
 const phrasePatternCache = new Map();
+const keywordPatternCache = new Map();
+const REQUIRED_SENIORITY_PATTERN = /(?<![\p{L}\p{N}])(?:senior\+?|sr\.?|сеньор|синьор|старш(?:ий|ая|ее|ие|его|ей|ему|им|их)|(?:middle|мидл)\s*(?:\+|plus|плюс|(?:\/|[-–—]|to)\s*(?:senior|сеньор|синьор))|(?:strong|сильн(?:ый|ая|ое|ые))\s+(?:middle|мидл))(?![\p{L}\p{N}])/u;
 
 function normalizeText(value = "") {
     return String(value)
@@ -156,12 +160,39 @@ function containsPhrase(normalizedText, phrase) {
     return phrasePattern(phrase).test(normalizedText);
 }
 
-function hasOnlyAllowedAlphabets(text = "") {
-    const letters = String(text).match(/\p{L}/gu) ?? [];
+function keywordPattern(keyword) {
+    if (keywordPatternCache.has(keyword)) {
+        return keywordPatternCache.get(keyword);
+    }
 
-    return letters.every((letter) =>
-        /[\p{Script=Latin}\p{Script=Cyrillic}]/u.test(letter)
+    const normalized = normalizeText(keyword);
+    const pattern = new RegExp(
+        `(?<![\\p{L}\\p{N}])${escapeRegExp(normalized)}(?![\\p{L}\\p{N}])`,
+        "u"
     );
+
+    keywordPatternCache.set(keyword, pattern);
+    return pattern;
+}
+
+function containsKeyword(normalizedText, keyword) {
+    return keywordPattern(keyword).test(normalizedText);
+}
+
+function hasRequiredSeniority(text = "") {
+    return REQUIRED_SENIORITY_PATTERN.test(normalizeText(text));
+}
+
+function hasPredominantlyAllowedAlphabet(text = "") {
+    const letters = String(text).match(/\p{L}/gu) ?? [];
+    const allowedLetterCount = letters.reduce(
+        (count, letter) => count + Number(
+            /[\p{Script=Latin}\p{Script=Cyrillic}]/u.test(letter)
+        ),
+        0
+    );
+
+    return allowedLetterCount >= letters.length - allowedLetterCount;
 }
 
 function hasVacancyIntent(text = "") {
@@ -212,19 +243,31 @@ function isRelevant(text = "", channelId, keywords) {
         return false;
     }
 
-    if (!hasOnlyAllowedAlphabets(text)) {
+    if (!hasPredominantlyAllowedAlphabet(text)) {
         return false;
     }
 
     const normalized = normalizeText(text);
-    const hasInclude = keywords.include.some((word) =>
-        normalized.includes(normalizeText(word))
-    );
     const hasExclude = keywords.exclude.some((word) =>
-        normalized.includes(normalizeText(word))
+        containsKeyword(normalized, word)
     );
 
-    if (!hasInclude || hasExclude) {
+    if (hasExclude) {
+        return false;
+    }
+
+    if (
+        keywords.requireSeniorLevel === true &&
+        !hasRequiredSeniority(normalized)
+    ) {
+        return false;
+    }
+
+    const hasInclude = keywords.include.some((word) =>
+        containsKeyword(normalized, word)
+    );
+
+    if (!hasInclude) {
         return false;
     }
 
@@ -235,7 +278,10 @@ module.exports = {
     PRIMARY_HIRING_SIGNALS,
     NON_VACANCY_SIGNALS,
     STRUCTURED_VACANCY_FIELDS,
-    hasOnlyAllowedAlphabets,
+    containsKeyword,
+    hasOnlyAllowedAlphabets: hasPredominantlyAllowedAlphabet,
+    hasPredominantlyAllowedAlphabet,
+    hasRequiredSeniority,
     hasVacancyIntent,
     isRelevant,
     normalizeText,

@@ -1,4 +1,4 @@
-const INVALID_CHANNELS = require("./invalidchannel.json");
+const INVALID_CHANNELS = require("./config/excluded_channels.json");
 
 const EXCLUDED_CHANNELS = Object.freeze([
     {

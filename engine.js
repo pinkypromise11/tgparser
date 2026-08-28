@@ -7,6 +7,14 @@ const { FloodWaitError } = require("telegram/errors");
 const { StringSession } = require("telegram/sessions");
 const { isExcludedChannelId } = require("./excluded_channels");
 const { isRelevant } = require("./post_filter");
+const { extractContactCandidates } = require("./contact_extractor");
+const {
+    analyzeApplicationMethods,
+    analyzeVacancy,
+    assertLlmConfigured,
+    formatDecisionHashtags,
+} = require("./llm");
+const { formatVacancyMessage } = require("./message_formatter");
 
 const CHANNELS_INFO = JSON.parse(
     fs.readFileSync("config/channels_with_ids.json", "utf8")
@@ -41,6 +49,14 @@ function saveState(state) {
     );
 }
 
+function rememberProcessed(state, processed, uid) {
+    if (processed.has(uid)) return;
+
+    processed.add(uid);
+    state.processed.push(uid);
+    saveState(state);
+}
+
 async function safeSendMessage(client, target, formatted) {
     while (true) {
         try {
@@ -65,7 +81,18 @@ async function safeSendMessage(client, target, formatted) {
     }
 }
 
-async function buildMessage(client, channelId, message) {
+async function buildMessage(
+    client,
+    channelId,
+    message,
+    decision,
+    applicationDecision
+) {
+    const hashtags = formatDecisionHashtags(
+        decision,
+        applicationDecision
+    );
+
     try {
         const entity = await client.getEntity(channelId);
         const sourceTitle = entity?.title || "Unknown channel";
@@ -73,22 +100,17 @@ async function buildMessage(client, channelId, message) {
             ? `https://t.me/${entity.username}/${message.id}`
             : "Private channel";
 
-        return [
-            "💼 ВАКАНСИЯ",
-            "",
-            `📢 Источник: ${sourceTitle}`,
-            `🔗 ${postLink}`,
-            "",
-            "────────────────",
-            "",
-            message.message,
-        ].join("\n");
+        return formatVacancyMessage({
+            hashtags,
+            postText: message.message,
+            sourceTitle,
+            postLink,
+        });
     } catch {
-        return [
-            "💼 ВАКАНСИЯ",
-            "",
-            message.message,
-        ].join("\n");
+        return formatVacancyMessage({
+            hashtags,
+            postText: message.message,
+        });
     }
 }
 
@@ -112,18 +134,53 @@ async function processMessage(
         return;
     }
 
+    let decision;
+    let applicationDecision;
+
+    try {
+        decision = await analyzeVacancy(message.message);
+
+        if (decision.verdict === "reject") {
+            rememberProcessed(state, processed, uid);
+            console.log(
+                `AI rejected: ${uid} (${decision.confidence}%: ${decision.reason})`
+            );
+            return;
+        }
+
+        console.log(
+            `AI approved [${decision.verdict}/${decision.primary_stack}]: ${uid} (${decision.confidence}%: ${decision.reason})`
+        );
+
+        const contactCandidates = extractContactCandidates(message);
+        applicationDecision = await analyzeApplicationMethods(
+            message.message,
+            contactCandidates
+        );
+        const applicationLabel = applicationDecision.methods.length
+            ? applicationDecision.methods.join(",")
+            : "none";
+
+        console.log(
+            `AI application methods [${applicationLabel}]: ${uid} (${applicationDecision.confidence}%: ${applicationDecision.reason})`
+        );
+    } catch (error) {
+        console.log(`AI filter error (${uid}):`, error.message);
+        return;
+    }
+
     const formatted = await buildMessage(
         client,
         channelId,
-        message
+        message,
+        decision,
+        applicationDecision
     );
 
     try {
         await safeSendMessage(client, TARGET_CHANNEL, formatted);
 
-        processed.add(uid);
-        state.processed.push(uid);
-        saveState(state);
+        rememberProcessed(state, processed, uid);
         sentCounter++;
 
         console.log(`${label} match: ${uid}`);
@@ -164,6 +221,8 @@ function waitForShutdown(client) {
 }
 
 async function main() {
+    assertLlmConfigured();
+
     const session = fs
         .readFileSync("session.txt", "utf8")
         .trim();

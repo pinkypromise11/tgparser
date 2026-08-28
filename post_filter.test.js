@@ -1,8 +1,12 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
+const projectKeywords = require("./config/keywords.json");
+
 const {
-    hasOnlyAllowedAlphabets,
+    containsKeyword,
+    hasPredominantlyAllowedAlphabet,
+    hasRequiredSeniority,
     hasVacancyIntent,
     isRelevant,
     normalizeText,
@@ -14,6 +18,79 @@ const keywords = {
     include: ["python", "fastapi", "developer"],
     exclude: ["open to work", "#resume", "#cv"],
 };
+
+test("matches strict keywords as complete terms", () => {
+    assert.equal(
+        containsKeyword(normalizeText("JavaScript developer"), "javascript"),
+        true
+    );
+    assert.equal(
+        containsKeyword(normalizeText("JavaScript developer"), "java"),
+        false
+    );
+    assert.equal(
+        containsKeyword(normalizeText("ASP.NET developer"), ".net"),
+        false
+    );
+    assert.equal(
+        containsKeyword(normalizeText("Node.js developer"), "node.js"),
+        true
+    );
+});
+
+test("accepts only explicit Senior or Middle+ levels", () => {
+    for (const text of [
+        "Senior Node.js developer",
+        "Senior+ React Engineer",
+        "Sr. Python Developer",
+        "Middle+ TypeScript developer",
+        "Middle/Senior Frontend developer",
+        "Middle — Senior Backend developer",
+        "Strong Middle React developer",
+        "Сеньор Python-разработчик",
+        "Старший разработчик Node.js",
+        "Мидл+ React-разработчик",
+        "Сильный мидл TypeScript-разработчик",
+    ]) {
+        assert.equal(hasRequiredSeniority(text), true, text);
+    }
+
+    for (const text of [
+        "Junior React developer",
+        "Middle Python developer",
+        "Python developer with 6 years of experience",
+        "Начинающий TypeScript-разработчик",
+        "Frontend developer",
+    ]) {
+        assert.equal(hasRequiredSeniority(text), false, text);
+    }
+});
+
+test("project prefilter requires a target stack instead of generic job words", () => {
+    for (const text of [
+        "We are hiring a senior network engineer. Remote role.",
+        "Vacancy: Senior Java Developer",
+        "Ищем DevOps инженера, удаленная работа",
+    ]) {
+        assert.equal(
+            isRelevant(text, OTHER_CHANNEL, projectKeywords),
+            false,
+            text
+        );
+    }
+
+    for (const text of [
+        "We are hiring a Senior Node.js backend developer",
+        "Вакансия Middle+ React-разработчика. Требования: TypeScript. Условия: удаленно.",
+        "Мы ищем Middle/Senior Python backend разработчика со знанием Django",
+    ]) {
+        assert.equal(
+            isRelevant(text, OTHER_CHANNEL, projectKeywords),
+            true,
+            text
+        );
+    }
+});
 
 test("rejects the cited technical chat messages in the strict channel", () => {
     const messages = [
@@ -156,24 +233,36 @@ test("recognizes dataset-specific vacancy formats", () => {
     }
 });
 
-test("allows only Latin and Cyrillic alphabets in channel entries", () => {
+test("accepts entries predominantly written in Latin or Cyrillic", () => {
     for (const text of [
         "We're hiring a Python développeur 🚀",
         "Ищем Python-разработчика — Київ",
         "Python/C# developer, salary: €3,000",
         "https://example.com/jobs/123 🔥",
-    ]) {
-        assert.equal(hasOnlyAllowedAlphabets(text), true, text);
-    }
-
-    for (const text of [
         "We are hiring a Python 开发工程师",
         "Python developer مطلوب",
         "Python developer απαιτείται",
     ]) {
-        assert.equal(hasOnlyAllowedAlphabets(text), false, text);
+        assert.equal(hasPredominantlyAllowedAlphabet(text), true, text);
+    }
+
+    for (const text of [
+        "招聘软件开发工程师，我们正在寻找经验丰富的工程师。Python vacancy",
+        "مطلوب مهندس برمجيات ذو خبرة للعمل معنا Python vacancy",
+        "Αναζητούμε έμπειρο μηχανικό λογισμικού Python vacancy",
+    ]) {
+        assert.equal(hasPredominantlyAllowedAlphabet(text), false, text);
         assert.equal(isRelevant(text, OTHER_CHANNEL, keywords), false, text);
     }
+
+    assert.equal(
+        isRelevant(
+            "We are hiring a Python 开发工程师",
+            OTHER_CHANNEL,
+            keywords
+        ),
+        true
+    );
 });
 
 test("rejects moderation, résumé feedback, and promotional hiring posts", () => {

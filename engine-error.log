@@ -1,3 +1,0 @@
-Error: Not connected
-    at ConnectionTCPFull.recv (D:\TelegramParser\node_modules\telegram\network\connection\Connection.js:71:15)
-    at async MTProtoSender._recvLoop (D:\TelegramParser\node_modules\telegram\network\MTProtoSender.js:373:24)
