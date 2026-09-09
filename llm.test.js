@@ -5,6 +5,8 @@ const {
     APPLICATION_METHODS,
     APPLICATION_METHOD_SCHEMA,
     CERTAIN_CONFIDENCE_THRESHOLD,
+    LOCATION_CONFIDENCE_THRESHOLD,
+    LOCATION_DECISION_SCHEMA,
     MODEL,
     PRIMARY_STACKS,
     RETAG_DECISION_SCHEMA,
@@ -12,10 +14,12 @@ const {
     analyzeApplicationMethods,
     analyzePublishedVacancyTag,
     analyzeVacancy,
+    analyzeVacancyLocation,
     enforceApplicationEvidence,
     formatDecisionHashtags,
     normalizeDecision,
     normalizeApplicationDecision,
+    normalizeLocationDecision,
     normalizeRetagDecision,
 } = require("./llm");
 
@@ -105,6 +109,81 @@ test("keeps technology hashtags for backend vacancies", () => {
             reason: "The role appears relevant but its status is unclear",
         }),
         "#проверить #python"
+    );
+});
+
+test("publishes Django and FastAPI backend vacancies under Python", () => {
+    for (const primaryStack of ["django", "fastapi"]) {
+        const hashtags = formatDecisionHashtags({
+            verdict: "certain",
+            confidence: 95,
+            primary_stack: primaryStack,
+            reason: `${primaryStack} is the primary backend framework`,
+        });
+
+        assert.ok(hashtags.endsWith(" #python"));
+        assert.doesNotMatch(hashtags, /#(?:django|fastapi)\b/u);
+    }
+});
+
+test("classifies explicit vacancy geography with a strict schema", async () => {
+    const fake = fakeOpenAI({
+        location: "rf",
+        confidence: 99,
+        reason: "The vacancy explicitly requires working from Minsk, Belarus",
+    });
+
+    const decision = await analyzeVacancyLocation(
+        "Work from our Minsk office, Belarus",
+        fake.client
+    );
+    const request = fake.calls[0];
+
+    assert.deepEqual(decision, {
+        location: "rf",
+        confidence: 99,
+        reason: "The vacancy explicitly requires working from Minsk, Belarus",
+    });
+    assert.equal(request.model, MODEL);
+    assert.equal(request.store, false);
+    assert.equal(request.text.format.schema, LOCATION_DECISION_SCHEMA);
+    assert.match(request.instructions, /merely says remote or worldwide/);
+    assert.match(request.instructions, /salary currency/);
+    assert.match(request.instructions, /mixture of Russia\/Belarus and other countries/);
+    assert.match(request.instructions, /Europe or European time zones alone MUST be unknown/);
+});
+
+test("formats only definite high-confidence location hashtags", () => {
+    const vacancy = {
+        verdict: "certain",
+        confidence: 99,
+        primary_stack: "frontend",
+        reason: "Explicit senior frontend vacancy",
+    };
+
+    assert.ok(formatDecisionHashtags(vacancy, [], {
+        location: "rf",
+        confidence: 97,
+        reason: "Moscow office",
+    }).includes("#\u0440\u0444"));
+    assert.ok(formatDecisionHashtags(vacancy, [], {
+        location: "outside",
+        confidence: 98,
+        reason: "Poland only",
+    }).includes("#\u0432\u0443"));
+    assert.doesNotMatch(formatDecisionHashtags(vacancy, [], {
+        location: "unknown",
+        confidence: 100,
+        reason: "Remote with no country restriction",
+    }), /#(?:\u0440\u0444|\u0432\u0443)\b/u);
+
+    assert.equal(
+        normalizeLocationDecision({
+            location: "outside",
+            confidence: LOCATION_CONFIDENCE_THRESHOLD - 1,
+            reason: "The evidence is not certain enough",
+        }).location,
+        "unknown"
     );
 });
 

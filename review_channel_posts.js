@@ -11,8 +11,10 @@ const {
     analyzeApplicationMethods,
     analyzePublishedVacancyTag,
     analyzeVacancy,
+    analyzeVacancyLocation,
     enforceApplicationEvidence,
     formatDecisionHashtags,
+    formatLocationHashtag,
 } = require("./llm");
 const { extractContactCandidates } = require("./contact_extractor");
 
@@ -32,6 +34,10 @@ const APPLICATION_HASHTAG_BY_METHOD = Object.freeze({
     recruiter: APPLICATION_HASHTAGS[1],
     bot: APPLICATION_HASHTAGS[2],
 });
+const LOCATION_HASHTAGS = Object.freeze([
+    "#\u0440\u0444",
+    "#\u0432\u0443",
+]);
 const SEPARATOR = "────────────────";
 
 function dateKey(value = new Date()) {
@@ -126,6 +132,35 @@ function replaceApplicationHashtags(text, methods) {
     return lines.join("\n");
 }
 
+function replaceLocationHashtag(text, decision) {
+    const lines = text.replaceAll("\r\n", "\n").split("\n");
+    const tagLineIndex = lines.findIndex((line) => GENERATED_TAG_LINE.test(line));
+
+    if (tagLineIndex === -1) {
+        throw new Error("The published message has no generated hashtag line");
+    }
+
+    const locationHashtag = formatLocationHashtag(decision);
+    const tags = lines[tagLineIndex]
+        .trim()
+        .split(/\s+/u)
+        .filter((tag) => !LOCATION_HASHTAGS.includes(tag));
+
+    if (locationHashtag) {
+        const applicationIndex = tags.findIndex((tag) =>
+            APPLICATION_HASHTAGS.includes(tag)
+        );
+        const insertionIndex = applicationIndex === -1
+            ? tags.length
+            : applicationIndex;
+
+        tags.splice(insertionIndex, 0, locationHashtag);
+    }
+
+    lines[tagLineIndex] = tags.join(" ");
+    return lines.join("\n");
+}
+
 function extractSourceReference(text) {
     const separatorIndex = text.indexOf(SEPARATOR);
     const header = separatorIndex === -1
@@ -200,6 +235,14 @@ function applicationPlanPath(limit) {
     return path.join(
         "config",
         `channel-application-methods-last-${limit}-${timestamp}.json`
+    );
+}
+
+function locationPlanPath(limit) {
+    const timestamp = new Date().toISOString().replaceAll(":", "-");
+    return path.join(
+        "config",
+        `channel-locations-last-${limit}-${timestamp}.json`
     );
 }
 
@@ -576,6 +619,109 @@ async function buildApplicationPlan(limit) {
     }
 }
 
+async function buildLocationPlan(limit) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+        throw new Error(
+            "--plan-locations-last requires an integer limit from 1 to 1000"
+        );
+    }
+
+    const filePath = locationPlanPath(limit);
+    const client = await connectTelegram();
+
+    try {
+        const entity = await client.getEntity(TARGET_CHANNEL);
+        const messages = await getLastMessages(client, entity, limit);
+        const plan = {
+            version: 1,
+            operation: "locations",
+            targetChannel: TARGET_CHANNEL,
+            scope: {
+                type: "last",
+                limit,
+            },
+            createdAt: new Date().toISOString(),
+            items: [],
+        };
+
+        console.log(
+            `Found ${messages.length} latest messages to classify locations.`
+        );
+
+        for (const [index, message] of messages.entries()) {
+            const originalText = String(message.message || "");
+            const body = extractVacancyBody(originalText);
+            const base = {
+                id: message.id,
+                date: messageDate(message).toISOString(),
+                originalHash: sha256(originalText),
+                originalText,
+                preview: body.split(/\r?\n/, 1)[0].slice(0, 180),
+            };
+
+            console.log(
+                `[${index + 1}/${messages.length}] Location ${message.id}: ${base.preview}`
+            );
+
+            if (!body) {
+                plan.items.push({
+                    ...base,
+                    action: "keep",
+                    stage: "content",
+                    reason: "Message has no vacancy body to classify",
+                });
+                continue;
+            }
+
+            if (!originalText.split(/\r?\n/u).some((line) =>
+                GENERATED_TAG_LINE.test(line)
+            )) {
+                plan.items.push({
+                    ...base,
+                    action: "keep",
+                    stage: "content",
+                    reason: "Service message has no generated vacancy hashtag line",
+                });
+                continue;
+            }
+
+            try {
+                const decision = await analyzeVacancyLocation(body);
+                const updatedText = replaceLocationHashtag(
+                    originalText,
+                    decision
+                );
+                const hashtags = updatedText
+                    .split(/\r?\n/u)
+                    .find((line) => GENERATED_TAG_LINE.test(line));
+
+                plan.items.push({
+                    ...base,
+                    action: updatedText === originalText ? "keep" : "edit",
+                    stage: "gpt-location",
+                    decision,
+                    hashtags,
+                    updatedText,
+                    reason: decision.reason,
+                });
+            } catch (error) {
+                plan.items.push({
+                    ...base,
+                    action: "error",
+                    stage: "gpt-location",
+                    reason: error.message,
+                });
+            }
+        }
+
+        writePlan(filePath, plan);
+        console.log(`PLAN_FILE=${path.resolve(filePath)}`);
+        console.log(`SUMMARY=${JSON.stringify(summarize(plan))}`);
+    } finally {
+        await client.disconnect();
+    }
+}
+
 function readPlan(filePath) {
     const resolved = path.resolve(filePath);
     const plan = JSON.parse(fs.readFileSync(resolved, "utf8"));
@@ -593,7 +739,7 @@ function readPlan(filePath) {
     }
 
     if (
-        ["retag", "application-methods"].includes(plan.operation) &&
+        ["retag", "application-methods", "locations"].includes(plan.operation) &&
         plan.items.some((item) => item.action === "delete")
     ) {
         throw new Error("A tagging-only plan cannot contain delete actions");
@@ -748,11 +894,13 @@ async function applyPlan(filePath) {
 
             if (!message) {
                 if (
-                    plan.operation === "application-methods" &&
+                    ["application-methods", "locations"].includes(
+                        plan.operation
+                    ) &&
                     !item.appliedAt
                 ) {
                     item.action = "missing";
-                    item.reason = "Message disappeared before application-method tagging";
+                    item.reason = "Message disappeared before tagging";
                     item.missingAt = new Date().toISOString();
                     writePlan(resolved, plan);
                     continue;
@@ -829,7 +977,11 @@ async function verifyPlan(filePath) {
             }
         }
 
-        if (!["retag", "application-methods"].includes(plan.operation)) {
+        if (![
+            "retag",
+            "application-methods",
+            "locations",
+        ].includes(plan.operation)) {
             const remainingToday = await getMessagesForDate(
                 client,
                 entity,
@@ -891,6 +1043,11 @@ async function main() {
         return;
     }
 
+    if (mode === "--plan-locations-last") {
+        await buildLocationPlan(Number(argument));
+        return;
+    }
+
     if (!argument) {
         throw new Error(`${mode} requires a review-plan file path`);
     }
@@ -932,5 +1089,6 @@ module.exports = {
     extractSourceReference,
     getLastMessages,
     replaceApplicationHashtags,
+    replaceLocationHashtag,
     upsertDecisionHashtags,
 };

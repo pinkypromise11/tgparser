@@ -11,6 +11,7 @@ const { extractContactCandidates } = require("./contact_extractor");
 const {
     analyzeApplicationMethods,
     analyzeVacancy,
+    analyzeVacancyLocation,
     assertLlmConfigured,
     formatDecisionHashtags,
 } = require("./llm");
@@ -86,11 +87,13 @@ async function buildMessage(
     channelId,
     message,
     decision,
-    applicationDecision
+    applicationDecision,
+    locationDecision
 ) {
     const hashtags = formatDecisionHashtags(
         decision,
-        applicationDecision
+        applicationDecision,
+        locationDecision
     );
 
     try {
@@ -136,6 +139,7 @@ async function processMessage(
 
     let decision;
     let applicationDecision;
+    let locationDecision;
 
     try {
         decision = await analyzeVacancy(message.message);
@@ -164,6 +168,14 @@ async function processMessage(
         console.log(
             `AI application methods [${applicationLabel}]: ${uid} (${applicationDecision.confidence}%: ${applicationDecision.reason})`
         );
+
+        locationDecision = await analyzeVacancyLocation(
+            message.message
+        );
+
+        console.log(
+            `AI location [${locationDecision.location}]: ${uid} (${locationDecision.confidence}%: ${locationDecision.reason})`
+        );
     } catch (error) {
         console.log(`AI filter error (${uid}):`, error.message);
         return;
@@ -174,7 +186,8 @@ async function processMessage(
         channelId,
         message,
         decision,
-        applicationDecision
+        applicationDecision,
+        locationDecision
     );
 
     try {

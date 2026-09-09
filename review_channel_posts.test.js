@@ -8,6 +8,7 @@ const {
     extractSourceReference,
     getLastMessages,
     replaceApplicationHashtags,
+    replaceLocationHashtag,
     upsertDecisionHashtags,
 } = require("./review_channel_posts");
 
@@ -149,6 +150,36 @@ test("replaces application hashtags without changing certainty or stack", () => 
     assert.equal(
         replaceApplicationHashtags(updated, []).split("\n")[1],
         "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #frontend"
+    );
+});
+
+test("replaces or removes one location hashtag without changing other tags", () => {
+    const original = [
+        "\ud83d\udcbc \u0412\u0410\u041a\u0410\u041d\u0421\u0418\u042f",
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #python #\u0440\u0444 #\u0430\u043d\u043a\u0435\u0442\u0430",
+        "",
+        "\u2500".repeat(16),
+        "",
+        "Backend vacancy",
+    ].join("\n");
+
+    const outside = replaceLocationHashtag(original, {
+        location: "outside",
+        confidence: 99,
+        reason: "Germany only",
+    });
+
+    assert.equal(
+        outside.split("\n")[1],
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #python #\u0432\u0443 #\u0430\u043d\u043a\u0435\u0442\u0430"
+    );
+    assert.equal(
+        replaceLocationHashtag(outside, {
+            location: "unknown",
+            confidence: 100,
+            reason: "No definite location",
+        }).split("\n")[1],
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #python #\u0430\u043d\u043a\u0435\u0442\u0430"
     );
 });
 
