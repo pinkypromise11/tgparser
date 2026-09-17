@@ -1,4 +1,5 @@
 const OpenAI = require("openai");
+const { axiosFetch } = require("./axios_fetch");
 
 const MODEL = "gpt-5.6-luna";
 const CERTAIN_CONFIDENCE_THRESHOLD = 90;
@@ -37,6 +38,7 @@ const PRIMARY_STACKS = Object.freeze([
   "python",
   "django",
   "fastapi",
+  "devops",
 ]);
 const STACK_HASHTAGS = Object.freeze({
   frontend: "#frontend",
@@ -48,6 +50,7 @@ const STACK_HASHTAGS = Object.freeze({
   python: "#python",
   django: "#python",
   fastapi: "#python",
+  devops: "#devops",
 });
 const DECISION_SCHEMA = Object.freeze({
   type: "object",
@@ -185,7 +188,10 @@ function assertLlmConfigured() {
 
 function getClient() {
   assertLlmConfigured();
-  client ??= new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  client ??= new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+    fetch: axiosFetch,
+  });
   return client;
 }
 
@@ -518,17 +524,19 @@ async function analyzeVacancy(postText, openaiClient = getClient()) {
     instructions: [
       "You are the second-stage HR vacancy filter for a Telegram job feed.",
       "The first-stage keyword filter has already run; independently verify the whole post.",
-      "A relevant post must be a real open software-development vacancy for frontend, backend, full-stack, or software-engineer work.",
+      "A relevant post must be a real open software-development vacancy for frontend, backend, full-stack, or software-engineer work, or a real open DevOps vacancy.",
       "A relevant vacancy must explicitly target Senior, Senior+, Middle+, Strong Middle, or a combined Middle/Senior level.",
       "Reject Junior, intern, trainee, entry-level, beginner, plain Middle, and vacancies with no explicit qualifying seniority. Do not infer seniority only from years of experience.",
-      "Its primary required stack must be JavaScript, TypeScript, React, Next.js, Node.js, NestJS, Python backend, Django, or FastAPI.",
+      "Its primary required stack must be JavaScript, TypeScript, React, Next.js, Node.js, NestJS, Python backend, Django, FastAPI, or DevOps.",
       "Reject articles, news, courses, candidate resumes, job-search posts, vacancy-writing rules, generic promotions, and closed or already-filled roles.",
-      "Reject non-development roles such as management, sales, recruiting, design, analytics, data science, QA, support, DevOps/SRE, mobile, embedded, or game development.",
+      "Reject non-development roles such as management, sales, recruiting, design, analytics, data science, QA, support, mobile, embedded, or game development.",
+      "Accept only roles explicitly presented as DevOps without SRE in the role name; reject pure SRE, Site Reliability Engineer, and combined DevOps/SRE roles.",
       "Choose exactly one primary_stack from the vacancy title, core responsibilities, and mandatory requirements; ignore optional, nice-to-have, bonus, adjacent-team, and company-ecosystem technologies.",
       "Choose frontend for every accepted frontend role, including generic JavaScript or TypeScript frontend and roles based on React or Next.js. Never choose javascript or typescript for a frontend role.",
       "Choose fullstack only when both frontend and backend are substantial parts of the core responsibilities or mandatory requirements. A full-stack title supports this classification but does not by itself make it certain.",
       "If full-stack is probable but the evidence that both sides are core is incomplete, choose fullstack with verdict review. If backend is only optional or a bonus, choose frontend.",
       "For a backend role, choose its single primary required backend technology: javascript, typescript, nodejs, nestjs, python, django, or fastapi.",
+      "For an accepted DevOps role, choose devops only when DevOps is the explicit primary role; reject when DevOps is merely optional, a secondary skill, or adjacent-team context.",
       "Use certain only when the open vacancy, target developer role, and primary target stack are all explicit and unambiguous.",
       "Use review when the post is probably relevant but the vacancy status, role, or choice between two target primary stacks is ambiguous; still choose the single most likely primary target stack.",
       "Set primary_stack to null only for reject. If no target technology is clearly part of the primary required stack, reject instead of tagging an optional technology.",

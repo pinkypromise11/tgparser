@@ -72,6 +72,9 @@ test("uses GPT-5.6 Luna with strict structured output", async () => {
     assert.match(request.instructions, /Choose frontend for every accepted frontend role/);
     assert.match(request.instructions, /both frontend and backend are substantial/);
     assert.match(request.instructions, /fullstack with verdict review/);
+    assert.match(request.instructions, /real open DevOps vacancy/);
+    assert.match(request.instructions, /combined DevOps\/SRE roles/);
+    assert.match(request.instructions, /DevOps is the explicit primary role/);
 });
 
 test("allows only frontend/fullstack role tags for frontend-facing vacancies", () => {
@@ -109,6 +112,35 @@ test("keeps technology hashtags for backend vacancies", () => {
             reason: "The role appears relevant but its status is unclear",
         }),
         "#проверить #python"
+    );
+});
+
+test("accepts Senior DevOps decisions and publishes the DevOps hashtag", async () => {
+    const fake = fakeOpenAI({
+        verdict: "certain",
+        confidence: 96,
+        primary_stack: "devops",
+        reason: "DevOps is the explicit primary role",
+    });
+    const decision = await analyzeVacancy(
+        "We are hiring a Senior DevOps Engineer",
+        fake.client
+    );
+
+    assert.ok(PRIMARY_STACKS.includes("devops"));
+    assert.ok(
+        fake.calls[0].text.format.schema.properties.primary_stack.anyOf[0]
+            .enum.includes("devops")
+    );
+    assert.deepEqual(decision, {
+        verdict: "certain",
+        confidence: 96,
+        primary_stack: "devops",
+        reason: "DevOps is the explicit primary role",
+    });
+    assert.equal(
+        formatDecisionHashtags(decision),
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #devops"
     );
 });
 

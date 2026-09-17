@@ -81,12 +81,28 @@ test("project prefilter requires a target stack instead of generic job words", (
 
     for (const text of [
         "We are hiring a Senior Node.js backend developer",
+        "We are hiring a Senior DevOps Engineer. Remote role.",
+        "Senior Engineer vacancy. Requirements: Kubernetes. Stack: #devops.",
         "Вакансия Middle+ React-разработчика. Требования: TypeScript. Условия: удаленно.",
         "Мы ищем Middle/Senior Python backend разработчика со знанием Django",
     ]) {
         assert.equal(
             isRelevant(text, OTHER_CHANNEL, projectKeywords),
             true,
+            text
+        );
+    }
+});
+
+test("keeps the seniority requirement for DevOps vacancies", () => {
+    for (const text of [
+        "We are hiring a DevOps Engineer. Remote role.",
+        "Middle DevOps Engineer vacancy. Remote role.",
+        "Senior SRE vacancy. Remote role.",
+    ]) {
+        assert.equal(
+            isRelevant(text, OTHER_CHANNEL, projectKeywords),
+            false,
             text
         );
     }
