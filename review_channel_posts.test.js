@@ -8,7 +8,10 @@ const {
     extractSourceReference,
     getLastMessages,
     replaceApplicationHashtags,
+    replaceEmploymentHashtags,
     replaceLocationHashtag,
+    replaceLinkedinHashtag,
+    replaceWorkModeHashtag,
     upsertDecisionHashtags,
 } = require("./review_channel_posts");
 
@@ -180,6 +183,96 @@ test("replaces or removes one location hashtag without changing other tags", () 
             reason: "No definite location",
         }).split("\n")[1],
         "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #python #\u0430\u043d\u043a\u0435\u0442\u0430"
+    );
+});
+
+test("replaces only employment hashtags and preserves all existing tag types", () => {
+    const original = [
+        "\ud83d\udcbc \u0412\u0410\u041a\u0410\u041d\u0421\u0418\u042f",
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #python #\u0440\u0444 #\u043f\u0440\u043e\u0435\u043a\u0442 #\u043a\u043e\u043d\u0442\u0440\u0430\u043a\u0442 #\u0431\u043e\u0442",
+        "",
+        "─".repeat(16),
+        "",
+        "Backend vacancy",
+    ].join("\n");
+
+    const updated = replaceEmploymentHashtags(original, {
+        types: ["part_time", "full_time"],
+        confidence: 99,
+        reason: "Both schedules are explicitly offered",
+    });
+
+    assert.equal(
+        updated.split("\n")[1],
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #python #\u0440\u0444 #part-time #\u0444\u0443\u043b\u043b\u0442\u0430\u0439\u043c #\u0431\u043e\u0442"
+    );
+    assert.equal(
+        replaceEmploymentHashtags(updated, {
+            types: [],
+            confidence: 100,
+            reason: "No explicit employment format",
+        }).split("\n")[1],
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #python #\u0440\u0444 #\u0431\u043e\u0442"
+    );
+});
+
+test("replaces mutually exclusive work-mode hashtags without changing other tags", () => {
+    const original = [
+        "\ud83d\udcbc \u0412\u0410\u041a\u0410\u041d\u0421\u0418\u042f",
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #frontend #remote #\u043f\u0440\u043e\u0435\u043a\u0442 #\u0431\u043e\u0442",
+        "",
+        "─".repeat(16),
+        "",
+        "Frontend vacancy",
+    ].join("\n");
+
+    const hybrid = replaceWorkModeHashtag(original, {
+        mode: "hybrid",
+        confidence: 99,
+        reason: "Hybrid is explicit",
+    });
+
+    assert.equal(
+        hybrid.split("\n")[1],
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #frontend #hybrid #\u043f\u0440\u043e\u0435\u043a\u0442 #\u0431\u043e\u0442"
+    );
+    assert.equal(
+        replaceWorkModeHashtag(hybrid, {
+            mode: "unknown",
+            confidence: 100,
+            reason: "No explicit mode",
+        }).split("\n")[1],
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #frontend #\u043f\u0440\u043e\u0435\u043a\u0442 #\u0431\u043e\u0442"
+    );
+});
+
+test("adds or removes only the LinkedIn application hashtag", () => {
+    const original = [
+        "\ud83d\udcbc \u0412\u0410\u041a\u0410\u041d\u0421\u0418\u042f",
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #frontend #remote #\u0430\u043d\u043a\u0435\u0442\u0430",
+        "",
+        "─".repeat(16),
+        "",
+        "Frontend vacancy",
+    ].join("\n");
+
+    const tagged = replaceLinkedinHashtag(original, {
+        linkedin: true,
+        confidence: 99,
+        reason: "Apply via LinkedIn is explicit",
+    });
+
+    assert.equal(
+        tagged.split("\n")[1],
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #frontend #remote #\u0430\u043d\u043a\u0435\u0442\u0430 #Linkedin"
+    );
+    assert.equal(
+        replaceLinkedinHashtag(tagged, {
+            linkedin: false,
+            confidence: 100,
+            reason: "No explicit route",
+        }).split("\n")[1],
+        "#\u0434\u043e\u0441\u0442\u043e\u0432\u0435\u0440\u043d\u043e #frontend #remote #\u0430\u043d\u043a\u0435\u0442\u0430"
     );
 });
 

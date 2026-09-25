@@ -5,22 +5,35 @@ const {
     APPLICATION_METHODS,
     APPLICATION_METHOD_SCHEMA,
     CERTAIN_CONFIDENCE_THRESHOLD,
+    EMPLOYMENT_DECISION_SCHEMA,
+    EMPLOYMENT_TYPES,
     LOCATION_CONFIDENCE_THRESHOLD,
     LOCATION_DECISION_SCHEMA,
+    LINKEDIN_APPLICATION_DECISION_SCHEMA,
     MODEL,
     PRIMARY_STACKS,
     RETAG_DECISION_SCHEMA,
     RETAG_PRIMARY_STACKS,
+    WORK_MODE_DECISION_SCHEMA,
+    WORK_MODES,
     analyzeApplicationMethods,
+    analyzeLinkedinApplication,
     analyzePublishedVacancyTag,
     analyzeVacancy,
+    analyzeVacancyEmployment,
     analyzeVacancyLocation,
+    analyzeVacancyWorkMode,
     enforceApplicationEvidence,
     formatDecisionHashtags,
+    formatEmploymentHashtags,
+    formatWorkModeHashtag,
     normalizeDecision,
     normalizeApplicationDecision,
+    normalizeEmploymentDecision,
     normalizeLocationDecision,
+    normalizeLinkedinApplicationDecision,
     normalizeRetagDecision,
+    normalizeWorkModeDecision,
 } = require("./llm");
 
 function fakeOpenAI(decision) {
@@ -216,6 +229,156 @@ test("formats only definite high-confidence location hashtags", () => {
             reason: "The evidence is not certain enough",
         }).location,
         "unknown"
+    );
+});
+
+test("classifies every explicit employment format with a strict schema", async () => {
+    const fake = fakeOpenAI({
+        types: ["full_time", "b2b", "project", "part_time"],
+        confidence: 99,
+        reason: "The post explicitly states a fixed six-month project, B2B, and both schedules.",
+    });
+
+    const decision = await analyzeVacancyEmployment(
+        "B2B contract for a six-month project; part-time or full-time.",
+        fake.client
+    );
+    const request = fake.calls[0];
+
+    assert.deepEqual(decision.types, EMPLOYMENT_TYPES);
+    assert.equal(request.model, MODEL);
+    assert.equal(request.store, false);
+    assert.equal(request.text.format.schema, EMPLOYMENT_DECISION_SCHEMA);
+    assert.match(request.instructions, /temporary and has a definite finite project term/);
+    assert.match(request.instructions, /B2B is explicitly stated/);
+    assert.match(request.instructions, /Do not infer it from a normal schedule/);
+    assert.match(request.instructions, /empty types array/);
+});
+
+test("formats combined employment hashtags without adding a tag for an empty decision", () => {
+    assert.deepEqual(
+        formatEmploymentHashtags({
+            types: ["full_time", "b2b", "project", "part_time"],
+            confidence: 99,
+            reason: "All formats are explicit",
+        }),
+        ["#проект", "#контракт", "#part-time", "#фуллтайм"]
+    );
+    assert.deepEqual(formatEmploymentHashtags([]), []);
+
+    const hashtags = formatDecisionHashtags(
+        {
+            verdict: "certain",
+            confidence: 99,
+            primary_stack: "frontend",
+            reason: "Explicit senior frontend vacancy",
+        },
+        ["recruiter"],
+        null,
+        ["b2b", "part_time"]
+    );
+
+    assert.equal(
+        hashtags,
+        "#достоверно #frontend #контракт #part-time #рекрутер"
+    );
+});
+
+test("rejects unknown and duplicate employment types", () => {
+    assert.throws(
+        () => normalizeEmploymentDecision({
+            types: ["freelance"],
+            confidence: 99,
+            reason: "Unsupported output",
+        }),
+        /Unknown employment type/
+    );
+    assert.throws(
+        () => normalizeEmploymentDecision({
+            types: ["b2b", "b2b"],
+            confidence: 99,
+            reason: "Duplicate output",
+        }),
+        /Duplicate employment type/
+    );
+});
+
+test("classifies one explicit work mode with a strict schema", async () => {
+    const fake = fakeOpenAI({
+        mode: "hybrid",
+        confidence: 99,
+        reason: "The post explicitly requires hybrid work between home and the employer office.",
+    });
+
+    const decision = await analyzeVacancyWorkMode(
+        "Hybrid work: three days at home and two days in our office.",
+        fake.client
+    );
+    const request = fake.calls[0];
+
+    assert.deepEqual(decision, {
+        mode: "hybrid",
+        confidence: 99,
+        reason: "The post explicitly requires hybrid work between home and the employer office.",
+    });
+    assert.deepEqual(WORK_MODES, ["remote", "onsite", "hybrid", "unknown"]);
+    assert.equal(request.model, MODEL);
+    assert.equal(request.text.format.schema, WORK_MODE_DECISION_SCHEMA);
+    assert.match(request.instructions, /mutually exclusive/);
+    assert.match(request.instructions, /fully remote or fully remote-only/);
+    assert.match(request.instructions, /employer's office/);
+    assert.match(request.instructions, /empty types array|unknown when no work format/i);
+});
+
+test("formats only one mutually exclusive work-mode hashtag", () => {
+    assert.equal(formatWorkModeHashtag({
+        mode: "remote",
+        confidence: 99,
+        reason: "Fully remote is explicit",
+    }), "#remote");
+    assert.equal(formatWorkModeHashtag({
+        mode: "unknown",
+        confidence: 100,
+        reason: "No work mode is stated",
+    }), null);
+    assert.throws(
+        () => normalizeWorkModeDecision({
+            mode: "office",
+            confidence: 99,
+            reason: "Unsupported output",
+        }),
+        /Unknown work mode/
+    );
+});
+
+test("classifies LinkedIn only when it is an explicit application route", async () => {
+    const fake = fakeOpenAI({
+        linkedin: true,
+        confidence: 98,
+        reason: "The post explicitly asks candidates to apply through LinkedIn.",
+    });
+
+    const decision = await analyzeLinkedinApplication(
+        "Please apply through LinkedIn.",
+        fake.client
+    );
+    const request = fake.calls[0];
+
+    assert.deepEqual(decision, {
+        linkedin: true,
+        confidence: 98,
+        reason: "The post explicitly asks candidates to apply through LinkedIn.",
+    });
+    assert.equal(request.text.format.schema, LINKEDIN_APPLICATION_DECISION_SCHEMA);
+    assert.match(request.instructions, /application action and LinkedIn/);
+    assert.match(request.instructions, /company LinkedIn page/);
+    assert.throws(
+        () => normalizeLinkedinApplicationDecision({
+            linkedin: "yes",
+            confidence: 98,
+            reason: "Malformed output",
+        }),
+        /boolean linkedin/
     );
 });
 

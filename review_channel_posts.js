@@ -9,12 +9,17 @@ const { StringSession } = require("telegram/sessions");
 const {
     APPLICATION_METHODS,
     analyzeApplicationMethods,
+    analyzeLinkedinApplication,
     analyzePublishedVacancyTag,
     analyzeVacancy,
+    analyzeVacancyEmployment,
     analyzeVacancyLocation,
+    analyzeVacancyWorkMode,
     enforceApplicationEvidence,
     formatDecisionHashtags,
+    formatEmploymentHashtags,
     formatLocationHashtag,
+    formatWorkModeHashtag,
 } = require("./llm");
 const { extractContactCandidates } = require("./contact_extractor");
 
@@ -23,7 +28,7 @@ const KEYWORDS = JSON.parse(
     fs.readFileSync("config/keywords.json", "utf8")
 );
 const MOSCOW_TIME_ZONE = "Europe/Moscow";
-const GENERATED_TAG_LINE = /^#(?:достоверно|проверить)(?:\s+#[\p{L}\p{N}_]+)+\s*$/u;
+const GENERATED_TAG_LINE = /^#(?:достоверно|проверить)(?:\s+#[\p{L}\p{N}_-]+)+\s*$/u;
 const APPLICATION_HASHTAGS = Object.freeze([
     "#\u0430\u043d\u043a\u0435\u0442\u0430",
     "#\u0440\u0435\u043a\u0440\u0443\u0442\u0435\u0440",
@@ -38,6 +43,18 @@ const LOCATION_HASHTAGS = Object.freeze([
     "#\u0440\u0444",
     "#\u0432\u0443",
 ]);
+const EMPLOYMENT_HASHTAGS = Object.freeze([
+    "#проект",
+    "#контракт",
+    "#part-time",
+    "#фуллтайм",
+]);
+const WORK_MODE_HASHTAGS = Object.freeze([
+    "#remote",
+    "#onsite",
+    "#hybrid",
+]);
+const LINKEDIN_HASHTAG = "#Linkedin";
 const SEPARATOR = "────────────────";
 
 function dateKey(value = new Date()) {
@@ -90,10 +107,28 @@ function upsertDecisionHashtags(text, hashtags) {
             (tag) => existingLine.split(/\s+/u).includes(tag) &&
                 !hashtags.split(/\s+/u).includes(tag)
         );
+        const preservedLocationTags = LOCATION_HASHTAGS.filter(
+            (tag) => existingLine.split(/\s+/u).includes(tag) &&
+                !hashtags.split(/\s+/u).includes(tag)
+        );
+        const preservedEmploymentTags = EMPLOYMENT_HASHTAGS.filter(
+            (tag) => existingLine.split(/\s+/u).includes(tag) &&
+                !hashtags.split(/\s+/u).includes(tag)
+        );
+        const preservedWorkModeTags = WORK_MODE_HASHTAGS.filter(
+            (tag) => existingLine.split(/\s+/u).includes(tag) &&
+                !hashtags.split(/\s+/u).includes(tag)
+        );
+        const preserveLinkedinTag = existingLine.split(/\s+/u).includes(LINKEDIN_HASHTAG) &&
+            !hashtags.split(/\s+/u).includes(LINKEDIN_HASHTAG);
 
         lines[nextLineIndex] = [
             hashtags,
+            ...preservedLocationTags,
+            ...preservedWorkModeTags,
+            ...preservedEmploymentTags,
             ...preservedApplicationTags,
+            ...(preserveLinkedinTag ? [LINKEDIN_HASHTAG] : []),
         ].join(" ");
     } else {
         lines.splice(nextLineIndex, 0, hashtags);
@@ -157,6 +192,82 @@ function replaceLocationHashtag(text, decision) {
         tags.splice(insertionIndex, 0, locationHashtag);
     }
 
+    lines[tagLineIndex] = tags.join(" ");
+    return lines.join("\n");
+}
+
+function replaceEmploymentHashtags(text, decision) {
+    const lines = text.replaceAll("\r\n", "\n").split("\n");
+    const tagLineIndex = lines.findIndex((line) => GENERATED_TAG_LINE.test(line));
+
+    if (tagLineIndex === -1) {
+        throw new Error("The published message has no generated hashtag line");
+    }
+
+    const tags = lines[tagLineIndex]
+        .trim()
+        .split(/\s+/u)
+        .filter((tag) => !EMPLOYMENT_HASHTAGS.includes(tag));
+    const employmentTags = formatEmploymentHashtags(decision);
+    const applicationIndex = tags.findIndex((tag) =>
+        APPLICATION_HASHTAGS.includes(tag)
+    );
+    const insertionIndex = applicationIndex === -1
+        ? tags.length
+        : applicationIndex;
+
+    tags.splice(insertionIndex, 0, ...employmentTags);
+    lines[tagLineIndex] = tags.join(" ");
+    return lines.join("\n");
+}
+
+function replaceWorkModeHashtag(text, decision) {
+    const lines = text.replaceAll("\r\n", "\n").split("\n");
+    const tagLineIndex = lines.findIndex((line) => GENERATED_TAG_LINE.test(line));
+
+    if (tagLineIndex === -1) {
+        throw new Error("The published message has no generated hashtag line");
+    }
+
+    const tags = lines[tagLineIndex]
+        .trim()
+        .split(/\s+/u)
+        .filter((tag) => !WORK_MODE_HASHTAGS.includes(tag));
+    const workModeHashtag = formatWorkModeHashtag(decision);
+    const employmentIndex = tags.findIndex((tag) =>
+        EMPLOYMENT_HASHTAGS.includes(tag)
+    );
+    const applicationIndex = tags.findIndex((tag) =>
+        APPLICATION_HASHTAGS.includes(tag)
+    );
+    const insertionIndex = employmentIndex !== -1
+        ? employmentIndex
+        : applicationIndex === -1
+            ? tags.length
+            : applicationIndex;
+
+    if (workModeHashtag) {
+        tags.splice(insertionIndex, 0, workModeHashtag);
+    }
+
+    lines[tagLineIndex] = tags.join(" ");
+    return lines.join("\n");
+}
+
+function replaceLinkedinHashtag(text, decision) {
+    const lines = text.replaceAll("\r\n", "\n").split("\n");
+    const tagLineIndex = lines.findIndex((line) => GENERATED_TAG_LINE.test(line));
+
+    if (tagLineIndex === -1) {
+        throw new Error("The published message has no generated hashtag line");
+    }
+
+    const tags = lines[tagLineIndex]
+        .trim()
+        .split(/\s+/u)
+        .filter((tag) => tag !== LINKEDIN_HASHTAG);
+
+    if (decision.linkedin) tags.push(LINKEDIN_HASHTAG);
     lines[tagLineIndex] = tags.join(" ");
     return lines.join("\n");
 }
@@ -243,6 +354,30 @@ function locationPlanPath(limit) {
     return path.join(
         "config",
         `channel-locations-last-${limit}-${timestamp}.json`
+    );
+}
+
+function employmentPlanPath(limit) {
+    const timestamp = new Date().toISOString().replaceAll(":", "-");
+    return path.join(
+        "config",
+        `channel-employment-last-${limit}-${timestamp}.json`
+    );
+}
+
+function workModePlanPath(limit) {
+    const timestamp = new Date().toISOString().replaceAll(":", "-");
+    return path.join(
+        "config",
+        `channel-work-modes-last-${limit}-${timestamp}.json`
+    );
+}
+
+function linkedinPlanPath(limit) {
+    const timestamp = new Date().toISOString().replaceAll(":", "-");
+    return path.join(
+        "config",
+        `channel-linkedin-last-${limit}-${timestamp}.json`
     );
 }
 
@@ -722,6 +857,297 @@ async function buildLocationPlan(limit) {
     }
 }
 
+async function buildEmploymentPlan(limit) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+        throw new Error(
+            "--plan-employment-last requires an integer limit from 1 to 1000"
+        );
+    }
+
+    const filePath = employmentPlanPath(limit);
+    const client = await connectTelegram();
+
+    try {
+        const entity = await client.getEntity(TARGET_CHANNEL);
+        const messages = await getLastMessages(client, entity, limit);
+        const plan = {
+            version: 1,
+            operation: "employment",
+            targetChannel: TARGET_CHANNEL,
+            scope: {
+                type: "last",
+                limit,
+            },
+            createdAt: new Date().toISOString(),
+            items: [],
+        };
+
+        console.log(
+            `Found ${messages.length} latest messages to classify employment formats.`
+        );
+
+        for (const [index, message] of messages.entries()) {
+            const originalText = String(message.message || "");
+            const body = extractVacancyBody(originalText);
+            const base = {
+                id: message.id,
+                date: messageDate(message).toISOString(),
+                originalHash: sha256(originalText),
+                originalText,
+                preview: body.split(/\r?\n/, 1)[0].slice(0, 180),
+            };
+
+            console.log(
+                `[${index + 1}/${messages.length}] Employment ${message.id}: ${base.preview}`
+            );
+
+            if (!body) {
+                plan.items.push({
+                    ...base,
+                    action: "keep",
+                    stage: "content",
+                    reason: "Message has no vacancy body to classify",
+                });
+                continue;
+            }
+
+            if (!originalText.split(/\r?\n/u).some((line) =>
+                GENERATED_TAG_LINE.test(line)
+            )) {
+                plan.items.push({
+                    ...base,
+                    action: "keep",
+                    stage: "content",
+                    reason: "Service message has no generated vacancy hashtag line",
+                });
+                continue;
+            }
+
+            try {
+                const decision = await analyzeVacancyEmployment(body);
+                const updatedText = replaceEmploymentHashtags(
+                    originalText,
+                    decision
+                );
+                const hashtags = updatedText
+                    .split(/\r?\n/u)
+                    .find((line) => GENERATED_TAG_LINE.test(line));
+
+                plan.items.push({
+                    ...base,
+                    action: updatedText === originalText ? "keep" : "edit",
+                    stage: "gpt-employment",
+                    decision,
+                    hashtags,
+                    updatedText,
+                    reason: decision.reason,
+                });
+            } catch (error) {
+                plan.items.push({
+                    ...base,
+                    action: "error",
+                    stage: "gpt-employment",
+                    reason: error.message,
+                });
+            }
+        }
+
+        writePlan(filePath, plan);
+        console.log(`PLAN_FILE=${path.resolve(filePath)}`);
+        console.log(`SUMMARY=${JSON.stringify(summarize(plan))}`);
+    } finally {
+        await client.disconnect();
+    }
+}
+
+async function buildWorkModePlan(limit) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+        throw new Error(
+            "--plan-work-modes-last requires an integer limit from 1 to 1000"
+        );
+    }
+
+    const filePath = workModePlanPath(limit);
+    const client = await connectTelegram();
+
+    try {
+        const entity = await client.getEntity(TARGET_CHANNEL);
+        const messages = await getLastMessages(client, entity, limit);
+        const plan = {
+            version: 1,
+            operation: "work-modes",
+            targetChannel: TARGET_CHANNEL,
+            scope: {
+                type: "last",
+                limit,
+            },
+            createdAt: new Date().toISOString(),
+            items: [],
+        };
+
+        console.log(
+            `Found ${messages.length} latest messages to classify work modes.`
+        );
+
+        for (const [index, message] of messages.entries()) {
+            const originalText = String(message.message || "");
+            const body = extractVacancyBody(originalText);
+            const base = {
+                id: message.id,
+                date: messageDate(message).toISOString(),
+                originalHash: sha256(originalText),
+                originalText,
+                preview: body.split(/\r?\n/, 1)[0].slice(0, 180),
+            };
+
+            console.log(
+                `[${index + 1}/${messages.length}] Work mode ${message.id}: ${base.preview}`
+            );
+
+            if (!body) {
+                plan.items.push({
+                    ...base,
+                    action: "keep",
+                    stage: "content",
+                    reason: "Message has no vacancy body to classify",
+                });
+                continue;
+            }
+
+            if (!originalText.split(/\r?\n/u).some((line) =>
+                GENERATED_TAG_LINE.test(line)
+            )) {
+                plan.items.push({
+                    ...base,
+                    action: "keep",
+                    stage: "content",
+                    reason: "Service message has no generated vacancy hashtag line",
+                });
+                continue;
+            }
+
+            try {
+                const decision = await analyzeVacancyWorkMode(body);
+                const updatedText = replaceWorkModeHashtag(
+                    originalText,
+                    decision
+                );
+                const hashtags = updatedText
+                    .split(/\r?\n/u)
+                    .find((line) => GENERATED_TAG_LINE.test(line));
+
+                plan.items.push({
+                    ...base,
+                    action: updatedText === originalText ? "keep" : "edit",
+                    stage: "gpt-work-mode",
+                    decision,
+                    hashtags,
+                    updatedText,
+                    reason: decision.reason,
+                });
+            } catch (error) {
+                plan.items.push({
+                    ...base,
+                    action: "error",
+                    stage: "gpt-work-mode",
+                    reason: error.message,
+                });
+            }
+        }
+
+        writePlan(filePath, plan);
+        console.log(`PLAN_FILE=${path.resolve(filePath)}`);
+        console.log(`SUMMARY=${JSON.stringify(summarize(plan))}`);
+    } finally {
+        await client.disconnect();
+    }
+}
+
+async function buildLinkedinPlan(limit) {
+    if (!Number.isInteger(limit) || limit < 1 || limit > 1000) {
+        throw new Error(
+            "--plan-linkedin-last requires an integer limit from 1 to 1000"
+        );
+    }
+
+    const filePath = linkedinPlanPath(limit);
+    const client = await connectTelegram();
+
+    try {
+        const entity = await client.getEntity(TARGET_CHANNEL);
+        const messages = await getLastMessages(client, entity, limit);
+        const plan = {
+            version: 1,
+            operation: "linkedin",
+            targetChannel: TARGET_CHANNEL,
+            scope: { type: "last", limit },
+            createdAt: new Date().toISOString(),
+            items: [],
+        };
+
+        console.log(`Found ${messages.length} latest messages to classify LinkedIn application routes.`);
+
+        for (const [index, message] of messages.entries()) {
+            const originalText = String(message.message || "");
+            const body = extractVacancyBody(originalText);
+            const base = {
+                id: message.id,
+                date: messageDate(message).toISOString(),
+                originalHash: sha256(originalText),
+                originalText,
+                preview: body.split(/\r?\n/, 1)[0].slice(0, 180),
+            };
+
+            console.log(`[${index + 1}/${messages.length}] LinkedIn ${message.id}: ${base.preview}`);
+
+            if (!body || !originalText.split(/\r?\n/u).some((line) =>
+                GENERATED_TAG_LINE.test(line)
+            )) {
+                plan.items.push({
+                    ...base,
+                    action: "keep",
+                    stage: "content",
+                    reason: body
+                        ? "Service message has no generated vacancy hashtag line"
+                        : "Message has no vacancy body to classify",
+                });
+                continue;
+            }
+
+            try {
+                const decision = await analyzeLinkedinApplication(body);
+                const updatedText = replaceLinkedinHashtag(originalText, decision);
+                const hashtags = updatedText
+                    .split(/\r?\n/u)
+                    .find((line) => GENERATED_TAG_LINE.test(line));
+
+                plan.items.push({
+                    ...base,
+                    action: updatedText === originalText ? "keep" : "edit",
+                    stage: "gpt-linkedin",
+                    decision,
+                    hashtags,
+                    updatedText,
+                    reason: decision.reason,
+                });
+            } catch (error) {
+                plan.items.push({
+                    ...base,
+                    action: "error",
+                    stage: "gpt-linkedin",
+                    reason: error.message,
+                });
+            }
+        }
+
+        writePlan(filePath, plan);
+        console.log(`PLAN_FILE=${path.resolve(filePath)}`);
+        console.log(`SUMMARY=${JSON.stringify(summarize(plan))}`);
+    } finally {
+        await client.disconnect();
+    }
+}
+
 function readPlan(filePath) {
     const resolved = path.resolve(filePath);
     const plan = JSON.parse(fs.readFileSync(resolved, "utf8"));
@@ -739,7 +1165,7 @@ function readPlan(filePath) {
     }
 
     if (
-        ["retag", "application-methods", "locations"].includes(plan.operation) &&
+        ["retag", "application-methods", "locations", "employment", "work-modes", "linkedin"].includes(plan.operation) &&
         plan.items.some((item) => item.action === "delete")
     ) {
         throw new Error("A tagging-only plan cannot contain delete actions");
@@ -894,7 +1320,7 @@ async function applyPlan(filePath) {
 
             if (!message) {
                 if (
-                    ["application-methods", "locations"].includes(
+                    ["application-methods", "locations", "employment", "work-modes", "linkedin"].includes(
                         plan.operation
                     ) &&
                     !item.appliedAt
@@ -981,6 +1407,9 @@ async function verifyPlan(filePath) {
             "retag",
             "application-methods",
             "locations",
+            "employment",
+            "work-modes",
+            "linkedin",
         ].includes(plan.operation)) {
             const remainingToday = await getMessagesForDate(
                 client,
@@ -1048,6 +1477,21 @@ async function main() {
         return;
     }
 
+    if (mode === "--plan-employment-last") {
+        await buildEmploymentPlan(Number(argument));
+        return;
+    }
+
+    if (mode === "--plan-work-modes-last") {
+        await buildWorkModePlan(Number(argument));
+        return;
+    }
+
+    if (mode === "--plan-linkedin-last") {
+        await buildLinkedinPlan(Number(argument));
+        return;
+    }
+
     if (!argument) {
         throw new Error(`${mode} requires a review-plan file path`);
     }
@@ -1089,6 +1533,9 @@ module.exports = {
     extractSourceReference,
     getLastMessages,
     replaceApplicationHashtags,
+    replaceEmploymentHashtags,
     replaceLocationHashtag,
+    replaceLinkedinHashtag,
+    replaceWorkModeHashtag,
     upsertDecisionHashtags,
 };

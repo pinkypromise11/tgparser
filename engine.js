@@ -10,8 +10,11 @@ const { isRelevant } = require("./post_filter");
 const { extractContactCandidates } = require("./contact_extractor");
 const {
     analyzeApplicationMethods,
+    analyzeLinkedinApplication,
     analyzeVacancy,
+    analyzeVacancyEmployment,
     analyzeVacancyLocation,
+    analyzeVacancyWorkMode,
     assertLlmConfigured,
     formatDecisionHashtags,
 } = require("./llm");
@@ -88,12 +91,18 @@ async function buildMessage(
     message,
     decision,
     applicationDecision,
-    locationDecision
+    locationDecision,
+    employmentDecision,
+    workModeDecision,
+    linkedinDecision
 ) {
     const hashtags = formatDecisionHashtags(
         decision,
         applicationDecision,
-        locationDecision
+        locationDecision,
+        employmentDecision,
+        workModeDecision,
+        linkedinDecision
     );
 
     try {
@@ -140,6 +149,9 @@ async function processMessage(
     let decision;
     let applicationDecision;
     let locationDecision;
+    let employmentDecision;
+    let workModeDecision;
+    let linkedinDecision;
 
     try {
         decision = await analyzeVacancy(message.message);
@@ -176,6 +188,27 @@ async function processMessage(
         console.log(
             `AI location [${locationDecision.location}]: ${uid} (${locationDecision.confidence}%: ${locationDecision.reason})`
         );
+
+        employmentDecision = await analyzeVacancyEmployment(
+            message.message
+        );
+        const employmentLabel = employmentDecision.types.length
+            ? employmentDecision.types.join(",")
+            : "none";
+
+        console.log(
+            `AI employment [${employmentLabel}]: ${uid} (${employmentDecision.confidence}%: ${employmentDecision.reason})`
+        );
+
+        workModeDecision = await analyzeVacancyWorkMode(message.message);
+        console.log(
+            `AI work mode [${workModeDecision.mode}]: ${uid} (${workModeDecision.confidence}%: ${workModeDecision.reason})`
+        );
+
+        linkedinDecision = await analyzeLinkedinApplication(message.message);
+        console.log(
+            `AI LinkedIn application [${linkedinDecision.linkedin}]: ${uid} (${linkedinDecision.confidence}%: ${linkedinDecision.reason})`
+        );
     } catch (error) {
         console.log(`AI filter error (${uid}):`, error.message);
         return;
@@ -187,7 +220,10 @@ async function processMessage(
         message,
         decision,
         applicationDecision,
-        locationDecision
+        locationDecision,
+        employmentDecision,
+        workModeDecision,
+        linkedinDecision
     );
 
     try {
