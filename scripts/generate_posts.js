@@ -6,8 +6,8 @@ const { StringSession } = require("telegram/sessions");
 const {
     isExcludedChannelId,
     isExcludedChannelUsername,
-} = require("./excluded_channels");
-const { isRelevant } = require("./post_filter");
+} = require("../src/excluded_channels");
+const { isRelevant } = require("../src/post_filter");
 
 const CHANNELS_FILE = "config/channels_with_ids.json";
 const KEYWORDS_FILE = "config/keywords.json";

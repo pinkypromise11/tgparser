@@ -19,6 +19,9 @@ const {
     formatDecisionHashtags,
 } = require("./llm");
 const { formatVacancyMessage } = require("./message_formatter");
+const { SOURCE_ID: DIGEST_SOURCE_ID } = require("./digest_links");
+const { createDigestWorker } = require("./digest_worker");
+const { createLinkedVacancyWorker } = require("./linked_vacancy_worker");
 
 const CHANNELS_INFO = JSON.parse(
     fs.readFileSync("config/channels_with_ids.json", "utf8")
@@ -135,6 +138,8 @@ async function processMessage(
     label
 ) {
     if (!message.message) return;
+    // The dedicated durable poller owns this channel, including history and retries.
+    if (String(channelId) === DIGEST_SOURCE_ID) return;
 
     const uid = `${channelId}_${message.id}`;
 
@@ -205,9 +210,12 @@ async function processMessage(
             `AI work mode [${workModeDecision.mode}]: ${uid} (${workModeDecision.confidence}%: ${workModeDecision.reason})`
         );
 
-        linkedinDecision = await analyzeLinkedinApplication(message.message);
+        linkedinDecision = await analyzeLinkedinApplication(
+            message.message,
+            contactCandidates
+        );
         console.log(
-            `AI LinkedIn application [${linkedinDecision.linkedin}]: ${uid} (${linkedinDecision.confidence}%: ${linkedinDecision.reason})`
+            `AI LinkedIn relevance [${linkedinDecision.linkedin}]: ${uid} (${linkedinDecision.confidence}%: ${linkedinDecision.reason})`
         );
     } catch (error) {
         console.log(`AI filter error (${uid}):`, error.message);
@@ -245,7 +253,7 @@ async function processMessage(
     }
 }
 
-function waitForShutdown(client) {
+function waitForShutdown(client, digestWorker, linkedWorker) {
     return new Promise((resolve) => {
         const keepAlive = setInterval(() => {}, 60000);
         let stopping = false;
@@ -258,6 +266,7 @@ function waitForShutdown(client) {
             clearInterval(keepAlive);
 
             try {
+                await Promise.all([digestWorker.stop(), linkedWorker.stop()]);
                 await client.disconnect();
             } finally {
                 resolve();
@@ -285,11 +294,25 @@ async function main() {
     await client.connect();
     console.log("Engine connected");
 
+    const digestWorker = createDigestWorker(client);
+    const linkedWorker = createLinkedVacancyWorker(client, { channels: CHANNELS_INFO });
+    try {
+        await digestWorker.start();
+        await linkedWorker.start();
+    } catch (error) {
+        await Promise.all([digestWorker.stop(), linkedWorker.stop()]);
+        await client.disconnect();
+        throw error;
+    }
+
     const state = loadState();
     const processed = new Set(state.processed);
     let processingQueue = Promise.resolve();
 
     function enqueueMessage(channelId, message, label) {
+        // Linked posts are owned by the durable poller, before the whole-post keyword filter.
+        // This also prevents a second publication via live events or recent-history replay.
+        if (linkedWorker.owns(channelId, message)) return Promise.resolve();
         processingQueue = processingQueue
             .then(() =>
                 processMessage(
@@ -332,6 +355,7 @@ async function main() {
     console.log("Checking recent history...");
 
     for (const channelId of CHANNELS) {
+        if (String(channelId) === DIGEST_SOURCE_ID) continue;
         try {
             const entity = await client.getEntity(channelId);
             const messages = await client.getMessages(
@@ -358,7 +382,7 @@ async function main() {
     saveState(state);
 
     console.log("Listening for new messages...");
-    await waitForShutdown(client);
+    await waitForShutdown(client, digestWorker, linkedWorker);
 }
 
 main().catch((error) => {

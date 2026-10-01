@@ -6,7 +6,7 @@ const {
     containsExcludedChannelReference,
     isExcludedChannelId,
     isExcludedChannelUsername,
-} = require("./excluded_channels");
+} = require("../src/excluded_channels");
 
 test("contains all permanently excluded channels", () => {
     assert.equal(EXCLUDED_CHANNELS.length, 23);

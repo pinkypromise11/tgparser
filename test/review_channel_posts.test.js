@@ -13,7 +13,7 @@ const {
     replaceLinkedinHashtag,
     replaceWorkModeHashtag,
     upsertDecisionHashtags,
-} = require("./review_channel_posts");
+} = require("../scripts/review_channel_posts");
 
 test("uses the Moscow calendar date", () => {
     assert.equal(dateKey(new Date("2026-08-27T21:30:00.000Z")), "2026-08-28");

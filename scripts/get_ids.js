@@ -6,7 +6,7 @@ const { StringSession } = require("telegram/sessions");
 const {
     isExcludedChannelUsername,
     normalizeUsername,
-} = require("./excluded_channels");
+} = require("../src/excluded_channels");
 
 const apiId = Number(process.env.API_ID);
 const apiHash = process.env.API_HASH;

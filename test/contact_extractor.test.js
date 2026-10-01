@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { extractContactCandidates } = require("./contact_extractor");
+const { extractContactCandidates } = require("../src/contact_extractor");
 
 test("extracts visible URLs, recruiter email, mention, and contextual phone", () => {
     const candidates = extractContactCandidates({

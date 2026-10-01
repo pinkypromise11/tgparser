@@ -18,6 +18,7 @@ const {
     WORK_MODES,
     analyzeApplicationMethods,
     analyzeLinkedinApplication,
+    analyzeLinkedinContextFallback,
     analyzePublishedVacancyTag,
     analyzeVacancy,
     analyzeVacancyEmployment,
@@ -34,7 +35,7 @@ const {
     normalizeLinkedinApplicationDecision,
     normalizeRetagDecision,
     normalizeWorkModeDecision,
-} = require("./llm");
+} = require("../src/llm");
 
 function fakeOpenAI(decision) {
     const calls = [];
@@ -351,27 +352,37 @@ test("formats only one mutually exclusive work-mode hashtag", () => {
     );
 });
 
-test("classifies LinkedIn only when it is an explicit application route", async () => {
+test("classifies LinkedIn vacancy posts and contact routes with link context", async () => {
     const fake = fakeOpenAI({
-        linkedin: true,
-        confidence: 98,
-        reason: "The post explicitly asks candidates to apply through LinkedIn.",
+        linkedin: false,
+        confidence: 97,
+        reason: "This is only a generic company page.",
     });
 
+    const linkCandidates = [{
+        kind: "url",
+        value: "https://www.linkedin.com/company/example",
+        label: "Company LinkedIn",
+        source: "hidden_text_url",
+    }];
     const decision = await analyzeLinkedinApplication(
-        "Please apply through LinkedIn.",
+        "See our company page on LinkedIn.",
+        linkCandidates,
         fake.client
     );
     const request = fake.calls[0];
+    const input = JSON.parse(request.input);
 
     assert.deepEqual(decision, {
-        linkedin: true,
-        confidence: 98,
-        reason: "The post explicitly asks candidates to apply through LinkedIn.",
+        linkedin: false,
+        confidence: 97,
+        reason: "This is only a generic company page.",
     });
     assert.equal(request.text.format.schema, LINKEDIN_APPLICATION_DECISION_SCHEMA);
-    assert.match(request.instructions, /application action and LinkedIn/);
-    assert.match(request.instructions, /company LinkedIn page/);
+    assert.deepEqual(input.link_candidates, linkCandidates);
+    assert.match(request.instructions, /original LinkedIn post/);
+    assert.match(request.instructions, /hiring contact's LinkedIn profile/);
+    assert.match(request.instructions, /generic company LinkedIn page/);
     assert.throws(
         () => normalizeLinkedinApplicationDecision({
             linkedin: "yes",
@@ -380,6 +391,40 @@ test("classifies LinkedIn only when it is an explicit application route", async 
         }),
         /boolean linkedin/
     );
+});
+
+test("local LinkedIn fallback accepts vacancy-post links and personal contacts", () => {
+    const vacancyPost = analyzeLinkedinContextFallback(
+        "\u0418\u0449\u0435\u0442 \u0414\u0430\u043d\u0430, \u0435\u0451 \u043f\u043e\u0441\u0442 \u043d\u0430 LinkedIn.",
+        [{
+            kind: "url",
+            value: "https://lnkd.in/p/dfVRFHVZ",
+            label: "LinkedIn",
+            source: "hidden_text_url",
+        }]
+    );
+    const recruiterContact = analyzeLinkedinContextFallback(
+        "Recruiter contact",
+        [{
+            kind: "url",
+            value: "https://www.linkedin.com/in/hiring-manager",
+            label: "Hiring manager",
+            source: "hidden_text_url",
+        }]
+    );
+    const companyPage = analyzeLinkedinContextFallback(
+        "About our company",
+        [{
+            kind: "url",
+            value: "https://www.linkedin.com/company/example",
+            label: "Company LinkedIn",
+            source: "hidden_text_url",
+        }]
+    );
+
+    assert.equal(vacancyPost.linkedin, true);
+    assert.equal(recruiterContact.linkedin, true);
+    assert.equal(companyPage.linkedin, false);
 });
 
 test("classifies every explicit application method with GPT-5.6 Luna", async () => {

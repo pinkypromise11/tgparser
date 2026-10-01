@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const { formatVacancyMessage } = require("./message_formatter");
+const { formatVacancyMessage } = require("../src/message_formatter");
 
 test("places confidence and one stack hashtag on every formatted post", () => {
     const formatted = formatVacancyMessage({

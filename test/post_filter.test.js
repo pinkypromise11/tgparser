@@ -1,7 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const projectKeywords = require("./config/keywords.json");
+const projectKeywords = require("../config/keywords.json");
 
 const {
     containsKeyword,
@@ -10,7 +10,7 @@ const {
     hasVacancyIntent,
     isRelevant,
     normalizeText,
-} = require("./post_filter");
+} = require("../src/post_filter");
 
 const STRICT_CHANNEL = "-1001007166727";
 const OTHER_CHANNEL = "-1001136736785";

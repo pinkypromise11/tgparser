@@ -10,5 +10,4 @@ config/*
 !config/keywords.json
 !config/excluded_channels.json
 state.json
-llm.js
 llm.test.ts

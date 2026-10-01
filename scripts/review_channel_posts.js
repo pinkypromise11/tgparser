@@ -20,8 +20,8 @@ const {
     formatEmploymentHashtags,
     formatLocationHashtag,
     formatWorkModeHashtag,
-} = require("./llm");
-const { extractContactCandidates } = require("./contact_extractor");
+} = require("../src/llm");
+const { extractContactCandidates } = require("../src/contact_extractor");
 
 const TARGET_CHANNEL = "-1004295313892";
 const KEYWORDS = JSON.parse(
@@ -397,7 +397,7 @@ function summarize(plan) {
 }
 
 async function buildPlan() {
-    const { isRelevant } = require("./post_filter");
+    const { isRelevant } = require("../src/post_filter");
     const targetDate = dateKey();
     const filePath = planPath(targetDate);
     const client = await connectTelegram();

@@ -1,3 +1,3 @@
 @echo off
 cd /d D:\TelegramParser
-node engine.js
+node src\engine.js

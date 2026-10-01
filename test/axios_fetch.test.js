@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const http = require("node:http");
 
-const { axiosFetch } = require("./axios_fetch");
+const { axiosFetch } = require("../src/axios_fetch");
 
 test("axiosFetch sends fetch-style requests through Axios", async (t) => {
   const server = http.createServer((request, response) => {
