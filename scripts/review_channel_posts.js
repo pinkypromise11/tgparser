@@ -22,10 +22,12 @@ const {
     formatWorkModeHashtag,
 } = require("../src/llm");
 const { extractContactCandidates } = require("../src/contact_extractor");
+const { loadRuntimeConfig } = require("../src/runtime_config");
 
-const TARGET_CHANNEL = "-1004295313892";
+const runtimeConfig = loadRuntimeConfig();
+const TARGET_CHANNEL = runtimeConfig.targetChannel;
 const KEYWORDS = JSON.parse(
-    fs.readFileSync("config/keywords.json", "utf8")
+    fs.readFileSync(runtimeConfig.keywordsFile, "utf8")
 );
 const MOSCOW_TIME_ZONE = "Europe/Moscow";
 const GENERATED_TAG_LINE = /^#(?:достоверно|проверить)(?:\s+#[\p{L}\p{N}_-]+)+\s*$/u;
@@ -291,7 +293,7 @@ function extractSourceReference(text) {
 }
 
 async function connectTelegram() {
-    const session = fs.readFileSync("session.txt", "utf8").trim();
+    const session = fs.readFileSync(runtimeConfig.sessionFile, "utf8").trim();
     const client = new TelegramClient(
         new StringSession(session),
         Number(process.env.API_ID),

@@ -8,6 +8,7 @@ const { publicAddress, resolvePublicUrl, extractPage, fetchVacancy, fetchHimalay
 const { validateAnalysis, unavailable, analyzeDigestVacancy } = require("../src/digest_analyzer");
 const { hashtags, formatDigest } = require("../src/digest_format");
 const { makeJob, prepareJob, publishJob, sendPart, createDigestWorker, atomicWrite } = require("../src/digest_worker");
+const TARGET_ID = "-1009876543210";
 
 const candidate = { url: "https://example.com/jobs/1", label: "Senior Backend Engineer, Acme", context: "Senior Backend Engineer, Acme · UK" };
 const page = { status: "readable", url: candidate.url, text: "Senior Backend Engineer at Acme. Build Java services. Full Time. Remote in UK. Apply now." };
@@ -118,7 +119,7 @@ test("digest splits only between entries, with continuous numbering and UTF-16 b
 });
 
 test("LLM outage preserves fetched pages and resumes completed positions", async () => {
-    const job = { ...makeJob({ id: 37, date: 1790533977 }), candidates: [candidate, { ...candidate, url: candidate.url + "2" }] };
+    const job = { ...makeJob({ id: 37, date: 1790533977 }, { target: TARGET_ID }), candidates: [candidate, { ...candidate, url: candidate.url + "2" }] };
     let fetched = 0, analyzed = 0;
     let snapshot;
     const options = { log: () => {}, filter: async () => ({ accepted: true, stage: "ai" }), save: (j) => { snapshot = structuredClone(j); }, fetch: async () => { fetched++; return page; },
@@ -178,7 +179,7 @@ test("worker baselines first run, catches up after restart and journals before a
     const client = { getEntity: async () => ({ id: SOURCE_ID.slice(4) }), getMessages: async () => [{ id: 37 }],
         iterMessages: async function* ({}, { minId }) { for (const m of messages) if (m.id > minId) yield m; } };
     const prepared = [], published = [];
-    const opts = { dir, intervalMs: 100000, log: () => {},
+    const opts = { dir, target: TARGET_ID, intervalMs: 100000, log: () => {},
         prepare: async (job, { save }) => { prepared.push(job.id); job.parts = []; save(job); },
         publish: async (job, { save }) => { published.push(job.id); job.completed = true; save(job); } };
     let worker = createDigestWorker(client, opts);
@@ -237,7 +238,7 @@ test("polling continues collecting new posts while a prior digest is being analy
     const started = new Promise((resolve) => { began = resolve; });
     const client = { getEntity: async () => ({ id: SOURCE_ID.slice(4) }), getMessages: async () => [{ id: 37 }],
         iterMessages: async function* ({}, { minId }) { for (const m of [...messages]) if (m.id > minId) yield m; } };
-    const worker = createDigestWorker(client, { dir, intervalMs: 100000, log: () => {},
+    const worker = createDigestWorker(client, { dir, target: TARGET_ID, intervalMs: 100000, log: () => {},
         prepare: async (job, { save }) => { began(); await gate; job.parts = []; save(job); },
         publish: async (job, { save }) => { job.completed = true; save(job); } });
     await worker.start(); await worker.tick();

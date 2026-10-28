@@ -1,0 +1,10 @@
+{
+  "targetChannel": "-1003963771418",
+  "historyLimit": 30,
+  "channelsFile": "./config/channels_with_ids.json",
+  "keywordsFile": "./config/keywords.json",
+  "sessionFile": "./.telegram-parser/session.txt",
+  "stateFile": "./.telegram-parser/state.json",
+  "digestStateDir": "./.telegram-parser/targets/3963771418/digests",
+  "linkedVacancyStateDir": "./.telegram-parser/targets/3963771418/linked-vacancies"
+}

@@ -8,9 +8,11 @@ const {
     isExcludedChannelUsername,
 } = require("../src/excluded_channels");
 const { isRelevant } = require("../src/post_filter");
+const { loadRuntimeConfig } = require("../src/runtime_config");
 
-const CHANNELS_FILE = "config/channels_with_ids.json";
-const KEYWORDS_FILE = "config/keywords.json";
+const runtimeConfig = loadRuntimeConfig();
+const CHANNELS_FILE = runtimeConfig.channelsFile;
+const KEYWORDS_FILE = runtimeConfig.keywordsFile;
 const OUTPUT_FILE = "posts.json";
 const HOURS = 72;
 
@@ -32,7 +34,7 @@ function unixSeconds(value) {
 
 (async () => {
     const cutoff = Math.floor(Date.now() / 1000) - HOURS * 60 * 60;
-    const session = fs.readFileSync("session.txt", "utf8").trim();
+    const session = fs.readFileSync(runtimeConfig.sessionFile, "utf8").trim();
     const client = new TelegramClient(
         new StringSession(session),
         Number(process.env.API_ID),

@@ -5,9 +5,10 @@ const os = require('node:os');
 const path = require('node:path');
 const { extractLinkedVacancies } = require('../src/linked_vacancy_links');
 const { createLinkedVacancyWorker } = require('../src/linked_vacancy_worker');
-const { TARGET_ID, SOURCE_ID } = require('../src/digest_links');
+const { SOURCE_ID } = require('../src/digest_links');
 const { formatDigest } = require('../src/digest_format');
 const id = '-1001234567890';
+const TARGET_ID = '-1009876543210';
 const source = { id, username: 'test_jobs' };
 const msg = (n, date = 101) => ({ id: n, date, message: 'Senior React Developer https://example.com/jobs/' + n });
 function hidden(text, pairs) { return { message: text, entities: pairs.map(([label, url]) => ({ className: 'MessageEntityTextUrl', offset: text.indexOf(label), length: label.length, url })) }; }
@@ -56,7 +57,7 @@ function harness(t, extra = {}) {
             for (const m of rows) yield m;
         },
     };
-    const options = { dir, channels: [source, { id: SOURCE_ID }, { id: TARGET_ID }], now: () => time, intervalMs: 60000, log: () => {},
+    const options = { dir, target: TARGET_ID, channels: [source, { id: SOURCE_ID }, { id: TARGET_ID }], now: () => time, intervalMs: 60000, log: () => {},
         prepare: async (job, { save }) => { prepared.push(job.id); job.parts = []; save(job); },
         publish: async (job, { save }) => { published.push(job.id); job.completed = true; save(job); }, ...extra };
     return { dir, client, options, published, prepared, setMessages: m => { messages = m; }, setTime: v => { time = v; },

@@ -4,8 +4,11 @@ const { createHash } = require("node:crypto");
 const { isRelevant, normalizeText, containsKeyword } = require("./post_filter");
 const { analyzeVacancy, normalizeDecision } = require("./llm");
 const { SOURCE_ID } = require("./digest_links");
+const { loadRuntimeConfig } = require("./runtime_config");
 
-const loadKeywords = () => JSON.parse(fs.readFileSync(path.join(__dirname, "../config/keywords.json"), "utf8"));
+const loadKeywords = () => JSON.parse(
+    fs.readFileSync(loadRuntimeConfig().keywordsFile, "utf8")
+);
 const hash = (value) => createHash("sha256").update(value).digest("hex");
 function filterPolicy(keywords = loadKeywords()) {
     return hash(JSON.stringify({ version: 1, keywords,

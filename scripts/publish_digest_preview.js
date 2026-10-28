@@ -3,8 +3,11 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
-const { SOURCE_ID, TARGET_ID } = require("../src/digest_links");
+const { SOURCE_ID } = require("../src/digest_links");
 const { atomicWrite, prepareJob, publishJob, sendPart } = require("../src/digest_worker");
+const { loadRuntimeConfig } = require("../src/runtime_config");
+const runtimeConfig = loadRuntimeConfig();
+const TARGET_ID = runtimeConfig.targetChannel;
 
 async function main() {
     const id = Number(process.argv[2]);
@@ -19,7 +22,7 @@ async function main() {
     }
     if (!job.completed) await prepareJob(job, { save: (value) => atomicWrite(receipt, value) });
     if (!job.parts.length) { job.completed = true; atomicWrite(receipt, job); console.log("No matching vacancies; nothing sent."); return; }
-    const client = new TelegramClient(new StringSession(fs.readFileSync("session.txt", "utf8").trim()),
+    const client = new TelegramClient(new StringSession(fs.readFileSync(runtimeConfig.sessionFile, "utf8").trim()),
         Number(process.env.API_ID), process.env.API_HASH, { connectionRetries: 2 });
     try {
         await client.connect();

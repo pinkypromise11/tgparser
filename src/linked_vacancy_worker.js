@@ -1,13 +1,16 @@
 const fs = require('node:fs');
 const path = require('node:path');
-const { SOURCE_ID, TARGET_ID } = require('./digest_links');
+const { SOURCE_ID } = require('./digest_links');
+const { requirePublicationTarget } = require('./runtime_config');
 const { isExcludedChannelId } = require('./excluded_channels');
 const { extractLinkedVacancies } = require('./linked_vacancy_links');
 const { atomicWrite, acquireLock, prepareJob, publishJob, sendPart } = require('./digest_worker');
 
 function createLinkedVacancyWorker(client, { channels, dir = path.resolve('config/linked-vacancies'),
-    intervalMs = 60000, log = console.log, prepare = prepareJob, publish = publishJob, now = Date.now } = {}) {
-    const sources = new Map(channels.filter(c => String(c.id) !== SOURCE_ID && String(c.id) !== TARGET_ID && !isExcludedChannelId(c.id))
+    target, intervalMs = 60000, log = console.log, prepare = prepareJob,
+    publish = publishJob, now = Date.now } = {}) {
+    target = requirePublicationTarget(target);
+    const sources = new Map(channels.filter(c => String(c.id) !== SOURCE_ID && String(c.id) !== target && !isExcludedChannelId(c.id))
         .map(c => [String(c.id), { id: String(c.id), username: c.username || '' }]));
     const stateFile = path.join(dir, 'state.json');
     const jobsDir = path.join(dir, 'jobs');
@@ -27,7 +30,7 @@ function createLinkedVacancyWorker(client, { channels, dir = path.resolve('confi
         const candidates = extractLinkedVacancies(message, source.username);
         const file = jobPath(source.id, message.id);
         if (!candidates.length || fs.existsSync(file)) return;
-        saveJob({ version: 1, source: source.id, sourceUsername: source.username, target: TARGET_ID,
+        saveJob({ version: 1, source: source.id, sourceUsername: source.username, target,
             id: message.id, date: Number(message.date), sourceText: message.message,
             candidates, pages: [], results: [], parts: null, completed: false });
         log(`Linked vacancies queued: ${source.username || source.id}/${message.id} (${candidates.length})`);
@@ -91,11 +94,11 @@ function createLinkedVacancyWorker(client, { channels, dir = path.resolve('confi
             for (const job of jobs) {
                 if (stopped) break;
                 if (job.completed || job.retryAfter > now() || !sources.has(job.source)) continue;
-                if (job.target !== TARGET_ID) throw Error('Unexpected linked vacancy target');
+                if (job.target !== target) throw Error('Unexpected linked vacancy target');
                 try {
                     await prepare(job, { save: saveJob, log });
                     if (stopped) break;
-                    await publish(job, { save: saveJob, send: part => sendPart(client, TARGET_ID, part) });
+                    await publish(job, { save: saveJob, send: part => sendPart(client, target, part) });
                     delete job.error; delete job.retryAfter; saveJob(job);
                     log(`Linked vacancies completed: ${job.sourceUsername}/${job.id}; accepted=${job.acceptedCount || 0}, parts=${job.parts.length}`);
                 } catch (error) {

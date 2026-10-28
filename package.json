@@ -1,10 +1,13 @@
 {
   "scripts": {
     "test": "node --test",
-    "start": "node src/engine.js",
+    "start": "node engine.js",
+    "login:desktop": "node scripts/login_desktop.js",
     "digest:preview": "node scripts/preview_digest.js"
   },
   "dependencies": {
+    "@mtcute/convert": "^0.32.7",
+    "@mtcute/node": "^0.32.7",
     "axios": "^1.20.0",
     "cheerio": "^1.2.0",
     "dotenv": "^17.4.2",

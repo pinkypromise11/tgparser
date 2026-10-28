@@ -7,9 +7,11 @@ const {
     isExcludedChannelUsername,
     normalizeUsername,
 } = require("../src/excluded_channels");
+const { loadRuntimeConfig } = require("../src/runtime_config");
 
 const apiId = Number(process.env.API_ID);
 const apiHash = process.env.API_HASH;
+const runtimeConfig = loadRuntimeConfig();
 
 async function loadIdsFromFile(client, filename, market) {
     const lines = fs
@@ -58,7 +60,7 @@ async function loadIdsFromFile(client, filename, market) {
 
 (async () => {
     const session = fs
-        .readFileSync("session.txt", "utf8")
+        .readFileSync(runtimeConfig.sessionFile, "utf8")
         .trim();
 
     const client = new TelegramClient(
@@ -91,12 +93,12 @@ async function loadIdsFromFile(client, filename, market) {
     const all = [...ru, ...en];
 
     fs.writeFileSync(
-        "config/channels_with_ids.json",
+        runtimeConfig.channelsFile,
         JSON.stringify(all, null, 2)
     );
 
     console.log(
-        "🎉 Saved to config/channels_with_ids.json"
+        `🎉 Saved to ${runtimeConfig.channelsFile}`
     );
 
     process.exit(0);

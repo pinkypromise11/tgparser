@@ -3,9 +3,12 @@ const fs = require("node:fs");
 const path = require("node:path");
 const { TelegramClient, Api } = require("telegram");
 const { StringSession } = require("telegram/sessions");
-const { SOURCE_ID, TARGET_ID } = require("../src/digest_links");
+const { SOURCE_ID } = require("../src/digest_links");
 const { atomicWrite } = require("../src/digest_worker");
 const { filterDigestVacancy, filterPolicy } = require("../src/digest_filter");
+const { loadRuntimeConfig } = require("../src/runtime_config");
+const runtimeConfig = loadRuntimeConfig();
+const TARGET_ID = runtimeConfig.targetChannel;
 
 function retainPositions(text, accepted) {
     const matches = [...text.matchAll(/(?:^|\n\n)(\d+)\. /gu)];
@@ -54,7 +57,7 @@ async function main() {
             edits: receipt.parts.map((part) => ({ messageId: part.messageId, before: part.text,
                 after: retainPositions(part.text, accepted), applied: false })) };
     }
-    const client = new TelegramClient(new StringSession(fs.readFileSync("session.txt", "utf8").trim()),
+    const client = new TelegramClient(new StringSession(fs.readFileSync(runtimeConfig.sessionFile, "utf8").trim()),
         Number(process.env.API_ID), process.env.API_HASH, { connectionRetries: 2 });
     try {
         await client.connect();

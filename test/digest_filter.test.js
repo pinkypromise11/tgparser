@@ -18,7 +18,7 @@ const result = { matches: true, title: page.title, company: "Acme", direction: "
         { field: "level", quote: "Senior", source: "page" } ], url: candidate.url };
 const fullPage = { ...page, text: page.text + " Acme" };
 const quiet = { log: () => {}, save: () => {} };
-const jobFor = (candidates = [candidate]) => ({ ...makeJob({ id: 42, date: 1790533977 }), candidates });
+const jobFor = (candidates = [candidate]) => ({ ...makeJob({ id: 42, date: 1790533977 }, { target: "-1009876543210" }), candidates });
 
 test("digest keyword gate is identical to normal filtering, and excludes other positions' context", async () => {
     let calls = 0;

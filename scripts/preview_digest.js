@@ -6,6 +6,9 @@ const { StringSession } = require("telegram/sessions");
 const { SOURCE_USERNAME } = require("../src/digest_links");
 const { makeJob, prepareJob, atomicWrite } = require("../src/digest_worker");
 const { fetchVacancy } = require("../src/digest_fetch");
+const { loadRuntimeConfig } = require("../src/runtime_config");
+
+const runtimeConfig = loadRuntimeConfig();
 
 async function main() {
     const args = process.argv.slice(2);
@@ -18,13 +21,13 @@ async function main() {
     let job;
     if (fs.existsSync(file) && !args.includes("--refresh")) job = JSON.parse(fs.readFileSync(file, "utf8"));
     else {
-        const client = new TelegramClient(new StringSession(fs.readFileSync("session.txt", "utf8").trim()),
+        const client = new TelegramClient(new StringSession(fs.readFileSync(runtimeConfig.sessionFile, "utf8").trim()),
             Number(process.env.API_ID), process.env.API_HASH, { connectionRetries: 2 });
         try {
             await client.connect();
             const messages = await client.getMessages(SOURCE_USERNAME, { ids: [id] });
             if (!messages[0]?.message) throw new Error("Telegram post not found");
-            job = makeJob(messages[0]);
+            job = makeJob(messages[0], { target: runtimeConfig.targetChannel });
             atomicWrite(file, job);
         } finally { await client.disconnect(); }
     }

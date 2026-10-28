@@ -1,13 +1,14 @@
 require("dotenv").config();
 
 const fs = require("fs");
+const path = require("node:path");
 const { TelegramClient } = require("telegram");
 const { NewMessage } = require("telegram/events");
 const { FloodWaitError } = require("telegram/errors");
 const { StringSession } = require("telegram/sessions");
-const { isExcludedChannelId } = require("./excluded_channels");
-const { isRelevant } = require("./post_filter");
-const { extractContactCandidates } = require("./contact_extractor");
+const { isExcludedChannelId } = require("./src/excluded_channels");
+const { isRelevant } = require("./src/post_filter");
+const { extractContactCandidates } = require("./src/contact_extractor");
 const {
     analyzeApplicationMethods,
     analyzeLinkedinApplication,
@@ -17,51 +18,39 @@ const {
     analyzeVacancyWorkMode,
     assertLlmConfigured,
     formatDecisionHashtags,
-} = require("./llm");
-const { formatVacancyMessage } = require("./message_formatter");
-const { SOURCE_ID: DIGEST_SOURCE_ID } = require("./digest_links");
-const { createDigestWorker } = require("./digest_worker");
-const { createLinkedVacancyWorker } = require("./linked_vacancy_worker");
-
-const CHANNELS_INFO = JSON.parse(
-    fs.readFileSync("config/channels_with_ids.json", "utf8")
-);
-const CHANNELS = [
-    ...new Set(
-        CHANNELS_INFO
-            .map((item) => String(item.id))
-            .filter((id) => !isExcludedChannelId(id))
-    ),
-];
-const KEYWORDS = JSON.parse(
-    fs.readFileSync("config/keywords.json", "utf8")
-);
-const TARGET_CHANNEL = -1004295313892;
-const STATE_FILE = "config/state.json";
+} = require("./src/llm");
+const { formatVacancyMessage } = require("./src/message_formatter");
+const { SOURCE_ID: DIGEST_SOURCE_ID } = require("./src/digest_links");
+const { createDigestWorker } = require("./src/digest_worker");
+const { createLinkedVacancyWorker } = require("./src/linked_vacancy_worker");
+const { loadRuntimeConfig } = require("./src/runtime_config");
+const { resolveTargetChat } = require("./src/target_chat");
+const { loadTelegramCredentials } = require("./src/telegram_credentials");
 
 let sentCounter = 0;
 
-function loadState() {
-    if (!fs.existsSync(STATE_FILE)) {
+function loadState(stateFile) {
+    if (!fs.existsSync(stateFile)) {
         return { processed: [] };
     }
 
-    return JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+    return JSON.parse(fs.readFileSync(stateFile, "utf8"));
 }
 
-function saveState(state) {
+function saveState(stateFile, state) {
+    fs.mkdirSync(path.dirname(stateFile), { recursive: true });
     fs.writeFileSync(
-        STATE_FILE,
+        stateFile,
         JSON.stringify(state, null, 2)
     );
 }
 
-function rememberProcessed(state, processed, uid) {
+function rememberProcessed(stateFile, state, processed, uid) {
     if (processed.has(uid)) return;
 
     processed.add(uid);
     state.processed.push(uid);
-    saveState(state);
+    saveState(stateFile, state);
 }
 
 async function safeSendMessage(client, target, formatted) {
@@ -135,7 +124,8 @@ async function processMessage(
     message,
     state,
     processed,
-    label
+    label,
+    { keywords, targetChannel, stateFile }
 ) {
     if (!message.message) return;
     // The dedicated durable poller owns this channel, including history and retries.
@@ -147,7 +137,7 @@ async function processMessage(
         return;
     }
 
-    if (!isRelevant(message.message, channelId, KEYWORDS)) {
+    if (!isRelevant(message.message, channelId, keywords)) {
         return;
     }
 
@@ -162,7 +152,7 @@ async function processMessage(
         decision = await analyzeVacancy(message.message);
 
         if (decision.verdict === "reject") {
-            rememberProcessed(state, processed, uid);
+            rememberProcessed(stateFile, state, processed, uid);
             console.log(
                 `AI rejected: ${uid} (${decision.confidence}%: ${decision.reason})`
             );
@@ -235,9 +225,9 @@ async function processMessage(
     );
 
     try {
-        await safeSendMessage(client, TARGET_CHANNEL, formatted);
+        await safeSendMessage(client, targetChannel, formatted);
 
-        rememberProcessed(state, processed, uid);
+        rememberProcessed(stateFile, state, processed, uid);
         sentCounter++;
 
         console.log(`${label} match: ${uid}`);
@@ -279,23 +269,53 @@ function waitForShutdown(client, digestWorker, linkedWorker) {
 }
 
 async function main() {
+    const config = loadRuntimeConfig();
+    const channelsInfo = JSON.parse(
+        fs.readFileSync(config.channelsFile, "utf8")
+    );
+    const channels = [
+        ...new Set(
+            channelsInfo
+                .map((item) => String(item.id))
+                .filter((id) => id !== config.targetChannel && !isExcludedChannelId(id))
+        ),
+    ];
+    const keywords = JSON.parse(
+        fs.readFileSync(config.keywordsFile, "utf8")
+    );
+
     assertLlmConfigured();
 
     const session = fs
-        .readFileSync("session.txt", "utf8")
+        .readFileSync(config.sessionFile, "utf8")
         .trim();
+    const { apiId, apiHash } = loadTelegramCredentials();
     const client = new TelegramClient(
         new StringSession(session),
-        Number(process.env.API_ID),
-        process.env.API_HASH,
+        apiId,
+        apiHash,
         { connectionRetries: 5 }
     );
 
     await client.connect();
+    try {
+        const target = await resolveTargetChat(client, config.targetChannel);
+        console.log(`Publishing to: ${target.title || config.targetChannel}`);
+    } catch (error) {
+        await client.destroy();
+        throw error;
+    }
     console.log("Engine connected");
 
-    const digestWorker = createDigestWorker(client);
-    const linkedWorker = createLinkedVacancyWorker(client, { channels: CHANNELS_INFO });
+    const digestWorker = createDigestWorker(client, {
+        dir: config.digestStateDir,
+        target: config.targetChannel,
+    });
+    const linkedWorker = createLinkedVacancyWorker(client, {
+        channels: channelsInfo,
+        dir: config.linkedVacancyStateDir,
+        target: config.targetChannel,
+    });
     try {
         await digestWorker.start();
         await linkedWorker.start();
@@ -305,7 +325,7 @@ async function main() {
         throw error;
     }
 
-    const state = loadState();
+    const state = loadState(config.stateFile);
     const processed = new Set(state.processed);
     let processingQueue = Promise.resolve();
 
@@ -321,7 +341,12 @@ async function main() {
                     message,
                     state,
                     processed,
-                    label
+                    label,
+                    {
+                        keywords,
+                        targetChannel: config.targetChannel,
+                        stateFile: config.stateFile,
+                    }
                 )
             )
             .catch((error) => {
@@ -347,20 +372,20 @@ async function main() {
             );
         },
         new NewMessage({
-            chats: CHANNELS,
+            chats: channels,
             incoming: true,
         })
     );
 
     console.log("Checking recent history...");
 
-    for (const channelId of CHANNELS) {
+    for (const channelId of channels) {
         if (String(channelId) === DIGEST_SOURCE_ID) continue;
         try {
             const entity = await client.getEntity(channelId);
             const messages = await client.getMessages(
                 entity,
-                { limit: 30 }
+                { limit: config.historyLimit }
             );
 
             for (const message of messages) {
@@ -379,7 +404,7 @@ async function main() {
     }
 
     await processingQueue;
-    saveState(state);
+    saveState(config.stateFile, state);
 
     console.log("Listening for new messages...");
     await waitForShutdown(client, digestWorker, linkedWorker);

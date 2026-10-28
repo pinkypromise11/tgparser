@@ -3,7 +3,8 @@ const path = require("node:path");
 const { randomBytes } = require("node:crypto");
 const { Api } = require("telegram");
 const { readBigIntFromBuffer } = require("telegram/Helpers");
-const { SOURCE_ID, SOURCE_USERNAME, TARGET_ID, extractDigestLinks } = require("./digest_links");
+const { SOURCE_ID, SOURCE_USERNAME, extractDigestLinks } = require("./digest_links");
+const { requirePublicationTarget } = require("./runtime_config");
 const { fetchVacancy } = require("./digest_fetch");
 const { analyzeDigestVacancy, unavailable, validateAnalysis } = require("./digest_analyzer");
 const { formatDigest } = require("./digest_format");
@@ -16,8 +17,9 @@ function atomicWrite(file, value) {
     fs.renameSync(temporary, file);
 }
 
-function makeJob(message) {
-    return { version: 1, source: SOURCE_ID, target: TARGET_ID, id: message.id,
+function makeJob(message, { source = SOURCE_ID, target } = {}) {
+    target = requirePublicationTarget(target);
+    return { version: 1, source, target, id: message.id,
         date: message.date instanceof Date ? Math.floor(message.date.getTime() / 1000) : Number(message.date),
         candidates: extractDigestLinks(message), pages: [], results: [], parts: null, completed: false };
 }
@@ -132,7 +134,9 @@ function acquireLock(dir) {
 }
 
 function createDigestWorker(client, { dir = path.resolve("config/digests"), intervalMs = 60000,
+    source = SOURCE_ID, sourceUsername = SOURCE_USERNAME, target,
     log = console.log, prepare = prepareJob, publish = publishJob } = {}) {
+    target = requirePublicationTarget(target);
     const stateFile = path.join(dir, "state.json");
     let state;
     let entity;
@@ -151,7 +155,7 @@ function createDigestWorker(client, { dir = path.resolve("config/digests"), inte
             // Advance the cursor only after the complete source snapshot is durable.
             for await (const message of client.iterMessages(entity, { minId: state.lastId, reverse: true })) {
                 if (stopped) return;
-                const job = makeJob(message);
+                const job = makeJob(message, { source, target });
                 if (job.candidates.length && !fs.existsSync(jobPath(job.id))) saveJob(job);
                 state.lastId = Math.max(state.lastId, message.id);
                 atomicWrite(stateFile, state);
@@ -173,11 +177,11 @@ function createDigestWorker(client, { dir = path.resolve("config/digests"), inte
             for (const file of files) {
                 if (stopped) return;
                 const job = JSON.parse(fs.readFileSync(path.join(dir, file), "utf8"));
-                if (job.source !== SOURCE_ID || job.target !== TARGET_ID) throw new Error("Unexpected digest source/target in saved job");
+                if (job.source !== source || job.target !== target) throw new Error("Unexpected digest source/target in saved job");
                 if (job.completed) continue;
                 await prepare(job, { save: saveJob, log });
                 if (stopped) return;
-                await publish(job, { save: saveJob, send: (part) => sendPart(client, TARGET_ID, part) });
+                await publish(job, { save: saveJob, send: (part) => sendPart(client, target, part) });
                 log(`Digest ${job.id}: sent ${job.parts.length} part(s)`);
             }
         })().catch((error) => log(`Digest retry next poll: ${error.message}`)).finally(() => { processing = null; });
@@ -193,14 +197,14 @@ function createDigestWorker(client, { dir = path.resolve("config/digests"), inte
         async start() {
             unlock = acquireLock(dir);
             try {
-                entity = await client.getEntity(SOURCE_USERNAME);
-                if (`-100${entity.id}` !== SOURCE_ID) throw new Error("Unexpected GrowGlobalJobs channel ID");
+                entity = await client.getEntity(sourceUsername);
+                if (`-100${entity.id}` !== source) throw new Error("Unexpected digest source channel ID");
                 if (fs.existsSync(stateFile)) {
                     state = JSON.parse(fs.readFileSync(stateFile, "utf8"));
-                    if (state.source !== SOURCE_ID || !Number.isInteger(state.lastId)) throw new Error("Invalid digest cursor");
+                    if (state.source !== source || !Number.isInteger(state.lastId)) throw new Error("Invalid digest cursor");
                 } else {
                     const messages = await client.getMessages(entity, { limit: 1 });
-                    state = { version: 1, source: SOURCE_ID, lastId: messages[0]?.id || 0 };
+                    state = { version: 1, source, lastId: messages[0]?.id || 0 };
                     atomicWrite(stateFile, state);
                     log(`Digest baseline: ${state.lastId}; only newer posts will be published`);
                 }

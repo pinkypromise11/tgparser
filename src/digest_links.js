@@ -1,6 +1,5 @@
 const SOURCE_ID = "-1004309301539";
 const SOURCE_USERNAME = "GrowGlobalJobs";
-const TARGET_ID = "-1004295313892";
 const SECTION = /^(?:backend|frontend|full[ -]?stack|ai\s*\/\s*ml|data|devops(?:\s*\/\s*sre)?|sre|qa|mobile|design|other|разработка|аналитика|тестирование)$/iu;
 const ROLE = /engineer|developer|architect|scientist|designer|analyst|разработчик|инженер|архитектор|ваканси|тестировщик/iu;
 const AD = /готовый промпт|переписать профиль|подписывай|наш канал|реклам|промокод|купить курс/iu;
@@ -56,4 +55,4 @@ function extractDigestLinks(message) {
     return items;
 }
 
-module.exports = { SOURCE_ID, SOURCE_USERNAME, TARGET_ID, canonicalUrl, extractDigestLinks };
+module.exports = { SOURCE_ID, SOURCE_USERNAME, canonicalUrl, extractDigestLinks };
